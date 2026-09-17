@@ -8,6 +8,12 @@ version = "0.1.0"
 description = "Walk-forward harness for short-horizon Bitcoin price forecasts."
 requires-python = ">=3.11"
 readme = "README.md"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "statsmodels>=0.14",
+    "arch>=7.0",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]

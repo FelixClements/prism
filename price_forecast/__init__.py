@@ -1,10 +1,11 @@
-"""Walk-forward price-forecast harness.
+"""Walk-forward scoreboard for short-horizon Bitcoin price forecasts.
 
-This is the scoreboard for a later ARIMA model. It is not the README ensemble.
+Not the README ensemble.
 """
 
 from price_forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
 from price_forecast.predictors import (
+    ArimaGarchPredictor,
     Forecast,
     LastValuePredictor,
     Predictor,
@@ -15,6 +16,7 @@ from price_forecast.series import LeakageError, load_daily_closes, synthetic_dai
 __all__ = [
     "HORIZONS",
     "WINDOWS",
+    "ArimaGarchPredictor",
     "Forecast",
     "HorizonResult",
     "LastValuePredictor",

@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+chronos = ["chronos-forecasting>=2.2"]
 
 [tool.setuptools.packages.find]
 include = ["price_forecast*"]

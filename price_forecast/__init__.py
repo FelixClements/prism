@@ -4,6 +4,7 @@ Not the README ensemble.
 """
 
 from price_forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
+from price_forecast.chronos import ChronosPredictor
 from price_forecast.predictors import (
     ArimaGarchPredictor,
     Forecast,
@@ -17,6 +18,7 @@ __all__ = [
     "HORIZONS",
     "WINDOWS",
     "ArimaGarchPredictor",
+    "ChronosPredictor",
     "Forecast",
     "HorizonResult",
     "LastValuePredictor",

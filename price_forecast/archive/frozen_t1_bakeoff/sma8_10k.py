@@ -1,7 +1,10 @@
-"""Dollar SMA-8 vs buy-and-hold. Frozen SMA-8; $10k fresh BTC start per window.
+"""OLD. Superseded by SMAGateV1. Dollar SMA-8 vs hold (t+1, 10 bps, start BTC).
 
-Usage:
-    .venv/bin/python -m price_forecast.sma8_10k
+Do not use for new work. Live freeze:
+    .venv/bin/python -m price_forecast.sma8_16_kpis
+
+Historical re-run:
+    .venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma8_10k
 """
 
 from __future__ import annotations
@@ -16,7 +19,7 @@ from price_forecast.series import (
     BTC_CLOSE_TIMEZONE,
     load_daily_closes,
 )
-from price_forecast.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
+from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
 from price_forecast.weekly_regime import (
     COST_BPS,
     SMA8_LOOKBACK,
@@ -106,7 +109,10 @@ def format_report(
     lines = [
         "# SMA-8 vs buy-and-hold, $10k start",
         "",
-        "Not investment advice. This is a backtest of a frozen weekly rule.",
+        "**OLD. Superseded by SMAGateV1.** Do not use for new work. "
+        "Live freeze: `python -m price_forecast.sma8_16_kpis`.",
+        "",
+        "Not investment advice. This is a backtest of a frozen weekly t+1 rule.",
         "",
         "## Exact rules",
         "",
@@ -141,10 +147,12 @@ def format_report(
             "## How to re-run",
             "",
             "```",
-            ".venv/bin/python -m price_forecast.sma8_10k",
+            ".venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma8_10k",
             "```",
             "",
-            "Writes `price_forecast/sma8_10k_results.md`. Frozen SMA-8 is `sma_signal(..., lookback=8)` in `price_forecast/weekly_regime.py`.",
+            "OLD. Superseded by SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). "
+            "Writes `price_forecast/archive/frozen_t1_bakeoff/sma8_10k_results.md`. "
+            "Frozen SMA-8 is `sma_signal(..., lookback=8)` in `price_forecast/weekly_regime.py`.",
             "",
         ]
     )

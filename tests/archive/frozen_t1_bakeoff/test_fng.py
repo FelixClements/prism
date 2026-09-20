@@ -1,10 +1,10 @@
-"""Alternative.me Crypto Fear & Greed Index parser. No invented values."""
+"""Historical tests for the archived F&G overlay loader. Not SMAGateV1."""
 
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from price_forecast.fng import FNG_SOURCE, bars_from_fng_payload
+from price_forecast.archive.frozen_t1_bakeoff.fng import FNG_SOURCE, bars_from_fng_payload
 
 
 def test_fng_payload_uses_utc_unix_dates_and_integer_values():

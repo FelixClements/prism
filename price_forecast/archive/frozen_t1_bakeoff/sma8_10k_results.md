@@ -1,6 +1,8 @@
 # SMA-8 vs buy-and-hold, $10k start
 
-Not investment advice. This is a backtest of a frozen weekly rule.
+**OLD. Superseded by SMAGateV1.** Do not use for new work. Live freeze: `python -m price_forecast.sma8_16_kpis`.
+
+Not investment advice. This is a backtest of a frozen weekly t+1 rule.
 
 ## Exact rules
 
@@ -119,7 +121,7 @@ Inherited-position bakeoff (scaled to $10k of starting wealth): $14,751.30 end, 
 ## How to re-run
 
 ```
-.venv/bin/python -m price_forecast.sma8_10k
+.venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma8_10k
 ```
 
-Writes `price_forecast/sma8_10k_results.md`. Frozen SMA-8 is `sma_signal(..., lookback=8)` in `price_forecast/weekly_regime.py`.
+OLD. Superseded by SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). Writes `price_forecast/archive/frozen_t1_bakeoff/sma8_10k_results.md`. Frozen SMA-8 is `sma_signal(..., lookback=8)` in `price_forecast/weekly_regime.py`.

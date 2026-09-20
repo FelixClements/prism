@@ -342,7 +342,9 @@ def test_report_table_marks_hodl_trade_kpis_na():
     text = format_report(compute_kpis(weeks))
 
     assert "Not investment advice" in text
-    assert "Current best-so-far (user, 2026-09-18)" in text
+    assert "SMAGateV1" in text
+    assert "not the frozen t+1 bakeoff" in text.lower()
+    assert "~30-40%" in text
     assert "Strategy" in text and "Buy & Hold" in text
     assert "n/a" in text
     assert "excess total return" in text.lower()

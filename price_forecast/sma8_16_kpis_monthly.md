@@ -1,8 +1,8 @@
-# SMA-8/16 monthly KPIs vs buy-and-hold
+# SMAGateV1 monthly KPIs vs buy-and-hold
 
-**Not investment advice.** Same same-bar weekly close, 0.15%/fill, start-cash rules as `sma8_16_kpis_results.md`.
+**SMAGateV1.** Not investment advice. Same same-bar weekly close, 0.15%/fill, start-cash rules as `sma8_16_kpis_results.md`. Still takes ~30-40% crash chapters.
 
-Full sample: 2018-04-22 → 2026-09-13, start $10,000.00, strategy end $156,621.64 vs HODL $87,191.09.
+Full sample: 2018-04-22 → 2026-09-20, start $10,000.00, strategy end $165,339.02 vs HODL $92,044.04.
 
 Monthly columns are that calendar month only (UTC month of the Sunday bar). Cumulative columns are from the first comparable bar through that month-end, using the same KPI definitions as the full-sample table (profit factor = completed round trips plus open-trade MTM, no extra exit fee).
 
@@ -112,7 +112,7 @@ Each row is one UTC calendar month of Sunday weekly bars. Monthly return is that
 *2026-06      $163,162.36    -14.09%     $67,521.01    -19.17%      0.00%     -9.49%    0.00%     1      $245.11  cash
  2026-07      $164,331.34      0.72%     $74,181.90      9.86%     -0.15%      0.00%   25.00%     1      $491.61  cash
  2026-08      $158,386.27     -3.62%     $88,173.46     18.86%     -3.62%     -3.10%   60.00%     1      $723.12   BTC
- 2026-09      $156,621.64     -1.11%     $87,191.09     -1.11%     -4.41%     -4.41%  100.00%     0        $0.00   BTC
+ 2026-09      $165,339.02      4.39%     $92,044.04      4.39%     -4.41%     -4.41%  100.00%     0        $0.00   BTC
 
 ## Highlighted chapters
 
@@ -268,7 +268,7 @@ Each row is one UTC calendar month of Sunday weekly bars. Monthly return is that
 | 2026-06 | 4 | $163,162.36 | -14.09% | $67,521.01 | -19.17% | 0.00% | -9.49% | 0.00% | 1 | $245.11 | cash |
 | 2026-07 | 4 | $164,331.34 | 0.72% | $74,181.90 | 9.86% | -0.15% | 0.00% | 25.00% | 1 | $491.61 | cash |
 | 2026-08 | 5 | $158,386.27 | -3.62% | $88,173.46 | 18.86% | -3.62% | -3.10% | 60.00% | 1 | $723.12 | BTC |
-| 2026-09 | 2 | $156,621.64 | -1.11% | $87,191.09 | -1.11% | -4.41% | -4.41% | 100.00% | 0 | $0.00 | BTC |
+| 2026-09 | 3 | $165,339.02 | 4.39% | $92,044.04 | 4.39% | -4.41% | -4.41% | 100.00% | 0 | $0.00 | BTC |
 
 ## Cumulative-to-date columns
 
@@ -375,7 +375,7 @@ Each row is one UTC calendar month of Sunday weekly bars. Monthly return is that
 | 2026-06 | 1531.62% | 575.21% | +956.41 pp | 1.7444 | -50.27% | -75.19% | 1.2987 | 1.0118 | 0.8090 | 0.3496 | 33.33% | 25 | $10,434.96 | 36 |
 | 2026-07 | 1543.31% | 641.82% | +901.49 pp | 1.7501 | -50.27% | -75.19% | 1.2907 | 1.0306 | 0.8025 | 0.3652 | 35.14% | 26 | $10,926.58 | 37 |
 | 2026-08 | 1483.86% | 781.73% | +702.13 pp | 1.7009 | -50.27% | -75.19% | 1.2720 | 1.0806 | 0.7795 | 0.3958 | 34.21% | 27 | $11,649.70 | 38 |
-| 2026-09 | 1466.22% | 771.91% | +694.31 pp | 1.6869 | -50.27% | -75.19% | 1.2668 | 1.0753 | 0.7716 | 0.3914 | 34.21% | 27 | $11,649.70 | 38 |
+| 2026-09 | 1553.39% | 820.44% | +732.95 pp | 1.7351 | -50.27% | -75.19% | 1.2831 | 1.0890 | 0.7874 | 0.4015 | 34.21% | 27 | $11,649.70 | 38 |
 
 How to re-run:
 

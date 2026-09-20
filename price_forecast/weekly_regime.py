@@ -1,6 +1,10 @@
-"""Weekly BTC in/out regime filter. Not a dollar-close forecast.
+"""Weekly BTC helpers and the archived t+1 in/out engine. Not a dollar-close forecast.
 
-Frozen rules (do not retune after seeing results):
+Live freeze is SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). This module
+still supplies `weekly_closes` to that runner. The t+1 / 10 bp / strict-inequality
+backtest below belongs to `price_forecast/archive/frozen_t1_bakeoff/`.
+
+Frozen t+1 rules (do not retune after seeing results):
 
 - Weeks: UTC, Monday 00:00 through Sunday 24:00. Bar date is the Sunday.
   Weekly close is the last Coinbase UTC daily close in that window.

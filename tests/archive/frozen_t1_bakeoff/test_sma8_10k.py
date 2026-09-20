@@ -1,11 +1,14 @@
-"""Dollar SMA-8 vs buy-and-hold: $10k fresh BTC start per window."""
+"""Historical tests for archived t+1 SMA-8 $10k tables. Not SMAGateV1."""
 
 from __future__ import annotations
 
 from datetime import date, timedelta
 
-from price_forecast.sma8_10k import STARTING_DOLLARS, dollar_window_specs
-from price_forecast.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
+from price_forecast.archive.frozen_t1_bakeoff.sma8_10k import (
+    STARTING_DOLLARS,
+    dollar_window_specs,
+)
+from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
 from price_forecast.weekly_regime import SMA8_LOOKBACK
 
 

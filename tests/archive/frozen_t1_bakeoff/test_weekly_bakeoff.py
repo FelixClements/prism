@@ -1,10 +1,10 @@
-"""Frozen weekly bakeoff scoreboard: no extra lookbacks, no F&G threshold search."""
+"""Historical tests for the archived t+1 weekly bakeoff. Not SMAGateV1."""
 
 from __future__ import annotations
 
 from datetime import date, timedelta
 
-from price_forecast.weekly_bakeoff import (
+from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import (
     CRASH_WINDOWS,
     LONG_RUN_WINDOW,
     STRATEGIES,

@@ -1,11 +1,11 @@
-"""Asymmetric SMA $10k grid: frozen combos, 40-week warmup, same calendar windows."""
+"""Historical tests for the archived t+1 asymmetric SMA grid. Not SMAGateV1."""
 
 from __future__ import annotations
 
 from datetime import date, timedelta
 
-from price_forecast.sma8_10k import STARTING_DOLLARS
-from price_forecast.sma_asymmetric_10k import (
+from price_forecast.archive.frozen_t1_bakeoff.sma8_10k import STARTING_DOLLARS
+from price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k import (
     BUY_WEEKS,
     LONGEST_SMA,
     SELL_WEEKS,
@@ -15,7 +15,7 @@ from price_forecast.sma_asymmetric_10k import (
     frozen_combos,
     score_grid,
 )
-from price_forecast.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
+from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
 from price_forecast.weekly_regime import DD_IMPROVEMENT, sma_first_fill_date
 
 

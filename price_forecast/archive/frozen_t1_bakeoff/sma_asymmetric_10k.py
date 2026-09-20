@@ -1,7 +1,10 @@
-"""Asymmetric SMA grid: longer SMA to sell, shorter SMA to buy. $10k fresh start.
+"""OLD. Superseded by SMAGateV1. Asymmetric SMA $10k grid (t+1, 10 bps, start BTC).
 
-Usage:
-    .venv/bin/python -m price_forecast.sma_asymmetric_10k
+Do not use for new work. Live freeze:
+    .venv/bin/python -m price_forecast.sma8_16_kpis
+
+Historical re-run:
+    .venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k
 """
 
 from __future__ import annotations
@@ -16,8 +19,12 @@ from price_forecast.series import (
     BTC_CLOSE_TIMEZONE,
     load_daily_closes,
 )
-from price_forecast.sma8_10k import STARTING_DOLLARS
-from price_forecast.weekly_bakeoff import CRASH_WINDOWS, LONG_RUN_WINDOW, WINDOWS
+from price_forecast.archive.frozen_t1_bakeoff.sma8_10k import STARTING_DOLLARS
+from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import (
+    CRASH_WINDOWS,
+    LONG_RUN_WINDOW,
+    WINDOWS,
+)
 from price_forecast.weekly_regime import (
     COST_BPS,
     DD_IMPROVEMENT,
@@ -175,7 +182,10 @@ def format_report(
     lines = [
         "# Asymmetric SMA grid vs SMA-8 and buy-and-hold, $10k start",
         "",
-        "Not investment advice. This is a backtest of a frozen weekly grid, not a new product rule.",
+        "**OLD. Superseded by SMAGateV1.** Do not use for new work. "
+        "Live freeze: `python -m price_forecast.sma8_16_kpis`.",
+        "",
+        "Not investment advice. This is a backtest of a frozen weekly t+1 grid, not a new product rule.",
         "",
         "## The answer in one paragraph",
         "",
@@ -230,10 +240,13 @@ def format_report(
         "## How to re-run",
         "",
         "```",
-        ".venv/bin/python -m price_forecast.sma_asymmetric_10k",
+        ".venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k",
         "```",
         "",
-        "Writes `price_forecast/sma_asymmetric_10k_results.md`. State machine is `asymmetric_sma_signal` in `price_forecast/weekly_regime.py`. Dollar fills reuse `dollar_backtest`.",
+        "OLD. Superseded by SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). "
+        "Writes `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md`. "
+        "State machine is `asymmetric_sma_signal` in `price_forecast/weekly_regime.py`. "
+        "Dollar fills reuse `dollar_backtest`.",
         "",
     ]
     return "\n".join(lines)

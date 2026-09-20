@@ -1,8 +1,9 @@
-"""Weekly BTC SMA-8 entry / SMA-16 exit KPIs versus buy-and-hold.
+"""SMAGateV1: weekly BTC SMA-8 in / SMA-16 out KPIs versus buy-and-hold.
 
-Not investment advice. Current best-so-far scoreboard (user, 2026-09-18).
-This is a separate same-bar, 0.15%-per-fill runner. It does not change the
-frozen weekly bakeoff (t+1 fill, 10 bps, strict inequalities).
+Not investment advice. User-named freeze of the locked best-so-far (2026-09-18);
+V1 is this freeze, not a new rule. This is a separate same-bar, 0.15%-per-fill
+runner. The old t+1 bakeoff (t+1 fill, 10 bps, strict inequalities) is archived
+at `price_forecast/archive/frozen_t1_bakeoff/`. Still takes ~30-40% crash chapters.
 
 Rules
 -----
@@ -955,10 +956,10 @@ def format_monthly_markdown(
         for row in rows
     ]
     lines = [
-        "# SMA-8/16 monthly KPIs vs buy-and-hold",
+        "# SMAGateV1 monthly KPIs vs buy-and-hold",
         "",
-        "**Not investment advice.** Same same-bar weekly close, 0.15%/fill, start-cash "
-        "rules as `sma8_16_kpis_results.md`.",
+        "**SMAGateV1.** Not investment advice. Same same-bar weekly close, 0.15%/fill, "
+        "start-cash rules as `sma8_16_kpis_results.md`. Still takes ~30-40% crash chapters.",
         "",
         f"Full sample: {report.start.isoformat()} → {report.end.isoformat()}, "
         f"start {_fmt_usd(report.start_dollars)}, "
@@ -1030,10 +1031,12 @@ def format_report(report: KpiReport) -> str:
     strat = report.strategy
     hodl = report.hodl
     lines = [
-        "# BTC weekly SMA-8 entry / SMA-16 exit vs buy-and-hold",
+        "# SMAGateV1 — weekly BTC SMA-8 in / SMA-16 out vs buy-and-hold",
         "",
-        "**Current best-so-far (user, 2026-09-18).** Not investment advice.",
-        "This is a historical backtest of one execution design, not a product rule.",
+        "**SMAGateV1** (user-named freeze of the locked best-so-far, 2026-09-18). "
+        "Not investment advice.",
+        "This is a historical backtest of one execution design, not a product rule. "
+        "V1 is this freeze, not a new rule.",
         "",
         f"KPI snapshot: start {_fmt_usd(report.start_dollars)}; "
         f"{report.start.isoformat()} → {report.end.isoformat()} "
@@ -1049,15 +1052,17 @@ def format_report(report: KpiReport) -> str:
         "- Start in cash (FLAT) until the first close >= SMA-8 after SMA-16 exists. "
         "The frozen $10k crash-window tables start in BTC.",
         "- 0.15% of notional on each fill. Frozen bakeoff uses 10 bps and strict inequalities.",
-        "- Not the frozen t+1 bakeoff (`weekly_bakeoff` / `sma_asymmetric_10k`).",
+        "- Not the frozen t+1 bakeoff (archived at `price_forecast/archive/frozen_t1_bakeoff/`).",
         "- Full-sample KPIs in this table. Monthly rows and the 2022 / Oct 2025–Jun 2026 "
         "chapters are in `sma8_16_kpis_monthly.md` (also `.csv`). A full-sample dollar "
-        "figure can still hide a bad crash window; read those months.",
+        "figure can still hide a bad crash window; SMAGateV1 still takes ~30-40% crash "
+        "chapters. Read those months.",
         "",
         "Same-bar fill at the weekly close (more optimistic than the frozen t+1 bakeoff).",
         "Cost is 0.15% per fill vs the frozen bakeoff's 10 bps. Entry uses close >= SMA-8;",
         "exit uses close <= SMA-16 (frozen bakeoff uses strict > / <). Do not compare these",
-        "dollars to `sma_asymmetric_10k_results.md` as if the rules were the same.",
+        "dollars to `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` "
+        "as if the rules were the same.",
         "",
         f"Date range: {report.start.isoformat()} → {report.end.isoformat()} "
         f"({report.n_comparable_weeks} comparable weekly bars after SMA-16 warmup).",
@@ -1135,7 +1140,7 @@ def format_report(report: KpiReport) -> str:
 
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="Weekly BTC SMA-8/SMA-16 same-bar KPIs vs buy-and-hold."
+        description="SMAGateV1: weekly BTC SMA-8 in / SMA-16 out same-bar KPIs vs buy-and-hold."
     )
     parser.add_argument(
         "--starting-dollars",

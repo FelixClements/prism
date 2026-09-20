@@ -1,4 +1,6 @@
-"""Crypto Fear & Greed Index from Alternative.me.
+"""OLD. Superseded by SMAGateV1. Crypto Fear & Greed Index from Alternative.me.
+
+Used only by the archived t+1 weekly bakeoff overlay. Do not use for new work.
 
 Source: https://alternative.me/crypto/fear-and-greed-index/
 API: https://api.alternative.me/fng/?limit=0  (limit=0 returns full history)

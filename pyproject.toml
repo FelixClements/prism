@@ -23,6 +23,7 @@ chronos = ["chronos-forecasting>=2.2"]
 include = ["price_forecast*"]
 
 [tool.pytest.ini_options]
+# tests/archive/frozen_t1_bakeoff is historical (t+1 SMA bakeoff). Collected on purpose.
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"

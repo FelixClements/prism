@@ -2,7 +2,7 @@
 
 Not investment advice. User-named freeze of the locked best-so-far (2026-09-18);
 V1 is this freeze, not a new rule. This is a separate same-bar, 0.15%-per-fill
-runner. The old t+1 bakeoff (t+1 fill, 10 bps, strict inequalities) is archived
+runner. The old t+1 bakeoff (t+1 fill, 10 bps) is archived
 at `price_forecast/archive/frozen_t1_bakeoff/`. Still takes ~30-40% crash chapters.
 
 Rules
@@ -13,8 +13,9 @@ Rules
 - Indicators: SMA-8 to enter, SMA-16 to exit. Each SMA includes this week's close.
   SMA at week t uses closes[0:t+1] only.
 - Start FLAT. No trade until both SMAs exist (first bar is the week SMA-16 appears).
-- If FLAT: BUY when weekly close >= SMA-8.
-- If LONG: SELL when weekly close <= SMA-16.
+- If FLAT: BUY when weekly close > SMA-8 (must go strictly above).
+- If LONG: SELL when weekly close < SMA-16 (must go strictly below).
+  On the line (close equals the SMA) is HOLD.
 - Else HOLD. One action per bar from the position at the start of the bar
   (no same-bar buy then sell).
 - Fill at that same weekly close. This is more optimistic than the frozen t+1 bakeoff.
@@ -284,7 +285,7 @@ def simulate_strategy(
         day, close = weeks[i]
         sma8 = sma_at(closes, i, BUY_WEEKS)
         sma16 = sma_at(closes, i, SELL_WEEKS)
-        if position == 0 and close >= sma8:
+        if position == 0 and close > sma8:
             fee = wealth * cost
             cash_before_open = wealth
             wealth -= fee
@@ -302,7 +303,7 @@ def simulate_strategy(
                     equity_after=wealth,
                 )
             )
-        elif position == 1 and close <= sma16:
+        elif position == 1 and close < sma16:
             proceeds = btc * close
             fee = proceeds * cost
             wealth = proceeds - fee
@@ -1049,9 +1050,10 @@ def format_report(report: KpiReport) -> str:
         "Caveats:",
         "- Same-bar weekly close fill: SMA at week t includes close t and the fill is close t. "
         "That is contemporaneous fill, not future lookahead. It is more optimistic than the frozen t+1 bakeoff.",
-        "- Start in cash (FLAT) until the first close >= SMA-8 after SMA-16 exists. "
+        "- Start in cash (FLAT) until the first close > SMA-8 after SMA-16 exists. "
         "The frozen $10k crash-window tables start in BTC.",
-        "- 0.15% of notional on each fill. Frozen bakeoff uses 10 bps and strict inequalities.",
+        "- 0.15% of notional on each fill. Frozen bakeoff uses 10 bps; this runner now also "
+        "uses strict > / < (on the line is HOLD).",
         "- Not the frozen t+1 bakeoff (archived at `price_forecast/archive/frozen_t1_bakeoff/`).",
         "- Full-sample KPIs in this table. Monthly rows and the 2022 / Oct 2025–Jun 2026 "
         "chapters are in `sma8_16_kpis_monthly.md` (also `.csv`). A full-sample dollar "
@@ -1059,8 +1061,8 @@ def format_report(report: KpiReport) -> str:
         "chapters. Read those months.",
         "",
         "Same-bar fill at the weekly close (more optimistic than the frozen t+1 bakeoff).",
-        "Cost is 0.15% per fill vs the frozen bakeoff's 10 bps. Entry uses close >= SMA-8;",
-        "exit uses close <= SMA-16 (frozen bakeoff uses strict > / <). Do not compare these",
+        "Cost is 0.15% per fill vs the frozen bakeoff's 10 bps. Entry uses close > SMA-8;",
+        "exit uses close < SMA-16 (on the line is HOLD). Do not compare these",
         "dollars to `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` "
         "as if the rules were the same.",
         "",

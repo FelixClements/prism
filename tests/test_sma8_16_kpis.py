@@ -63,26 +63,46 @@ def test_no_trade_before_both_sma8_and_sma16_exist():
         simulate_strategy(weeks)
 
 
-def test_starts_flat_and_buys_when_close_equals_sma8():
+def test_does_not_buy_when_close_equals_sma8():
     weeks = _weeks_from_closes([100.0] * 16)
+
+    path = simulate_strategy(weeks)
+
+    assert path.fills == []
+    assert path.long[-1] is False
+
+
+def test_buys_when_close_is_strictly_above_sma8():
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0])
 
     path = simulate_strategy(weeks)
 
     assert [fill.side for fill in path.fills] == ["BUY"]
     assert path.fills[0].index == 15
-    assert path.fills[0].price == pytest.approx(100.0)
+    assert path.fills[0].price == pytest.approx(110.0)
     assert path.long[-1] is True
 
 
-def test_sells_when_close_equals_sma16_while_long():
-    # Buy on the first SMA-16 bar; the next flat 100 equals SMA-16 → sell.
-    weeks = _weeks_from_closes([100.0] * 17)
+def test_does_not_sell_when_close_equals_sma16_while_long():
+    prefix = [100.0] * 15 + [110.0]
+    # Next close C equals SMA-16 including C: 16C = sum(last 15) + C.
+    equal_sma16 = sum(prefix[-15:]) / 15
+    weeks = _weeks_from_closes(prefix + [equal_sma16])
+
+    path = simulate_strategy(weeks)
+
+    assert [fill.side for fill in path.fills] == ["BUY"]
+    assert path.long[-1] is True
+
+
+def test_sells_when_close_is_strictly_below_sma16_while_long():
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0, 50.0])
 
     path = simulate_strategy(weeks)
 
     assert [fill.side for fill in path.fills] == ["BUY", "SELL"]
     assert path.fills[1].index == 16
-    assert path.fills[1].price == pytest.approx(100.0)
+    assert path.fills[1].price == pytest.approx(50.0)
     assert path.long[-1] is False
 
 
@@ -99,7 +119,7 @@ def test_stays_flat_when_close_is_below_sma8():
 
 
 def test_stays_long_when_close_is_above_sma16():
-    weeks = _weeks_from_closes([100.0] * 16 + [110.0, 120.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [110.0, 120.0])
 
     path = simulate_strategy(weeks)
 
@@ -108,8 +128,8 @@ def test_stays_long_when_close_is_above_sma16():
 
 
 def test_does_not_buy_and_sell_on_the_same_bar():
-    # First valid bar: close equals both SMAs. Evaluate from FLAT → BUY only.
-    weeks = _weeks_from_closes([100.0] * 16)
+    # First valid bar is strictly above both SMAs. Evaluate from FLAT → BUY only.
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0])
 
     path = simulate_strategy(weeks)
 
@@ -118,19 +138,19 @@ def test_does_not_buy_and_sell_on_the_same_bar():
 
 def test_signal_and_fill_use_the_same_weekly_close():
     # Buy at 100 on the first valid bar; next week 200 must not be the fill.
-    weeks = _weeks_from_closes([100.0] * 16 + [200.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [200.0])
 
     path = simulate_strategy(weeks)
 
-    assert path.fills[0].price == pytest.approx(100.0)
+    assert path.fills[0].price == pytest.approx(110.0)
     assert path.equity[0] == pytest.approx(STARTING_DOLLARS * (1.0 - FILL_COST))
     assert path.equity[-1] == pytest.approx(
-        STARTING_DOLLARS * (1.0 - FILL_COST) * 200.0 / 100.0
+        STARTING_DOLLARS * (1.0 - FILL_COST) * 200.0 / 110.0
     )
 
 
 def test_future_weeks_do_not_change_earlier_smas_or_fills():
-    base = [100.0] * 16 + [110.0]
+    base = [100.0] * 15 + [110.0] + [110.0]
     without_future = simulate_strategy(_weeks_from_closes(base))
     with_future = simulate_strategy(_weeks_from_closes(base + [10_000.0]))
 
@@ -144,17 +164,17 @@ def test_future_weeks_do_not_change_earlier_smas_or_fills():
 
 
 def test_one_buy_one_sell_applies_fifteen_bps_each_way():
-    # Buy 100, ride 110 then 120, sell 50. Exact cash math is in the assertions.
-    weeks = _weeks_from_closes([100.0] * 16 + [110.0, 120.0, 50.0])
+    # Buy 110, ride 110 then 120, sell 50. Exact cash math is in the assertions.
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [110.0, 120.0, 50.0])
 
     path = simulate_strategy(weeks)
 
     after_buy = STARTING_DOLLARS * (1.0 - FILL_COST)
-    btc = after_buy / 100.0
+    btc = after_buy / 110.0
     proceeds = btc * 50.0
     after_sell = proceeds * (1.0 - FILL_COST)
     assert [fill.side for fill in path.fills] == ["BUY", "SELL"]
-    assert path.fills[0].price == pytest.approx(100.0)
+    assert path.fills[0].price == pytest.approx(110.0)
     assert path.fills[1].price == pytest.approx(50.0)
     assert path.end_dollars == pytest.approx(after_sell)
     assert path.fees_paid == pytest.approx(STARTING_DOLLARS * FILL_COST + proceeds * FILL_COST)
@@ -162,38 +182,38 @@ def test_one_buy_one_sell_applies_fifteen_bps_each_way():
 
 
 def test_hodl_pays_one_entry_fee_and_no_exit_fee():
-    weeks = _weeks_from_closes([100.0] * 16 + [200.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [200.0])
 
     hodl = simulate_hodl(weeks)
 
     assert [fill.side for fill in hodl.fills] == ["BUY"]
-    assert hodl.fills[0].price == pytest.approx(100.0)
+    assert hodl.fills[0].price == pytest.approx(110.0)
     assert hodl.fees_paid == pytest.approx(STARTING_DOLLARS * FILL_COST)
     assert hodl.end_dollars == pytest.approx(
-        STARTING_DOLLARS * (1.0 - FILL_COST) * 200.0 / 100.0
+        STARTING_DOLLARS * (1.0 - FILL_COST) * 200.0 / 110.0
     )
     assert hodl.equity[0] == pytest.approx(STARTING_DOLLARS * (1.0 - FILL_COST))
 
 
 def test_hodl_entry_matches_first_strategy_comparable_bar():
-    weeks = _weeks_from_closes([100.0] * 16 + [110.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [110.0])
 
     strategy = simulate_strategy(weeks)
     hodl = simulate_hodl(weeks)
 
     assert strategy.dates[0] == hodl.dates[0]
     assert strategy.dates[0] == weeks[15][0]
-    assert hodl.start_price == pytest.approx(100.0)
+    assert hodl.start_price == pytest.approx(110.0)
 
 
 def test_open_position_is_marked_to_last_close_in_total_return():
-    weeks = _weeks_from_closes([100.0] * 16 + [150.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [150.0])
 
     report = compute_kpis(weeks)
 
     assert report.strategy.completed_round_trips == 0
     assert report.strategy.end_dollars == pytest.approx(
-        STARTING_DOLLARS * (1.0 - FILL_COST) * 150.0 / 100.0
+        STARTING_DOLLARS * (1.0 - FILL_COST) * 150.0 / 110.0
     )
     assert report.strategy.total_return == pytest.approx(
         report.strategy.end_dollars / STARTING_DOLLARS - 1.0
@@ -201,7 +221,7 @@ def test_open_position_is_marked_to_last_close_in_total_return():
 
 
 def test_profit_factor_includes_open_trade_mtm_as_virtual_close():
-    weeks = _weeks_from_closes([100.0] * 16 + [150.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [150.0])
 
     report = compute_kpis(weeks)
 
@@ -220,10 +240,10 @@ def test_profit_factor_is_winning_dollars_over_losing_dollars():
 
 def test_whipsaw_is_completed_round_trip_held_at_most_two_weekly_bars():
     # Holding period = exit_index - entry_index. Buy at 15, sell at 17 → 2 → whipsaw.
-    short = simulate_strategy(_weeks_from_closes([100.0] * 16 + [200.0, 50.0]))
+    short = simulate_strategy(_weeks_from_closes([100.0] * 15 + [110.0] + [200.0, 50.0]))
     # Buy at 15, hold 16 and 17, sell at 18 → 3 → not a whipsaw.
     longer = simulate_strategy(
-        _weeks_from_closes([100.0] * 16 + [110.0, 120.0, 50.0])
+        _weeks_from_closes([100.0] * 15 + [110.0] + [110.0, 120.0, 50.0])
     )
 
     assert short.fills[0].index == 15
@@ -235,7 +255,7 @@ def test_whipsaw_is_completed_round_trip_held_at_most_two_weekly_bars():
 
 def test_win_rate_uses_completed_round_trips_after_costs():
     # One completed losing round trip.
-    weeks = _weeks_from_closes([100.0] * 16 + [110.0, 120.0, 50.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [110.0, 120.0, 50.0])
 
     report = compute_kpis(weeks)
 
@@ -247,7 +267,7 @@ def test_win_rate_uses_completed_round_trips_after_costs():
 
 def test_exposure_is_fraction_of_comparable_weeks_long_after_the_fill():
     # Buy at bar 15, sell at bar 16, then cash. Two comparable weeks: long, then cash.
-    weeks = _weeks_from_closes([100.0] * 17)
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0, 50.0])
 
     path = simulate_strategy(weeks)
 
@@ -302,7 +322,7 @@ def test_flat_never_entered_path_has_na_sortino_and_mar():
 
 
 def test_strategy_alpha_is_excess_total_return_not_capm():
-    weeks = _weeks_from_closes([100.0] * 16 + [110.0, 120.0, 50.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [110.0, 120.0, 50.0])
 
     report = compute_kpis(weeks)
 
@@ -312,7 +332,7 @@ def test_strategy_alpha_is_excess_total_return_not_capm():
 
 
 def test_fee_drag_compares_no_fee_total_return_to_with_fee():
-    weeks = _weeks_from_closes([100.0] * 16 + [200.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [200.0])
 
     report = compute_kpis(weeks)
     no_fee = simulate_strategy(weeks, cost=0.0)
@@ -329,7 +349,7 @@ def test_fee_drag_compares_no_fee_total_return_to_with_fee():
 
 
 def test_starting_dollars_can_be_overridden():
-    weeks = _weeks_from_closes([100.0] * 16)
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0])
 
     path = simulate_strategy(weeks, starting_dollars=20_000.0)
 
@@ -337,7 +357,7 @@ def test_starting_dollars_can_be_overridden():
 
 
 def test_report_table_marks_hodl_trade_kpis_na():
-    weeks = _weeks_from_closes([100.0] * 16 + [110.0])
+    weeks = _weeks_from_closes([100.0] * 15 + [110.0] + [110.0])
 
     text = format_report(compute_kpis(weeks))
 
@@ -360,7 +380,7 @@ _MONTH_SPAN_START = date(2021, 10, 3)
 
 
 def _month_span_weeks(extra_closes: Sequence[float]) -> list[tuple[date, float]]:
-    return _weeks_from_closes([100.0] * 16 + list(extra_closes), start=_MONTH_SPAN_START)
+    return _weeks_from_closes([100.0] * 15 + [110.0] + list(extra_closes), start=_MONTH_SPAN_START)
 
 
 def test_monthly_rows_group_by_calendar_month_of_weekly_bar_date():
@@ -464,7 +484,7 @@ def test_intra_month_max_dd_uses_only_that_months_equity():
 
 def test_one_or_two_weekly_points_still_get_a_month_max_dd():
     # Index 15 on 2022-01-30 is the only January comparable bar.
-    one_point = _weeks_from_closes([100.0] * 16 + [110.0], start=date(2021, 10, 17))
+    one_point = _weeks_from_closes([100.0] * 15 + [110.0] + [110.0], start=date(2021, 10, 17))
     two_points = _weeks_from_closes(
         [100.0] * 15 + [110.0, 88.0], start=date(2021, 10, 10)
     )
@@ -482,7 +502,7 @@ def test_one_or_two_weekly_points_still_get_a_month_max_dd():
 
 
 def test_round_trips_and_fees_land_in_the_sell_month_not_the_buy_month():
-    # Buy first comparable January bar; sell first February bar (close 50 <= SMA-16).
+    # Buy first comparable January bar; sell first February bar (close 50 < SMA-16).
     weeks = _month_span_weeks([110.0, 120.0, 50.0, 50.0])
     rows = monthly_kpis(weeks)
     path = simulate_strategy(weeks)

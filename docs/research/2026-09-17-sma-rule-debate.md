@@ -148,7 +148,7 @@ Two rules are close on the dump the user named: SMA-8 and buy8/sell16. Still pic
 
 ## Addendum 2026-09-18 — SMAGateV1 (user-named best-so-far)
 
-The user named the locked best-so-far **SMAGateV1** (2026-09-18). Runner stays `python -m price_forecast.sma8_16_kpis` (`price_forecast/sma8_16_kpis.py`); the Python file is not renamed. Meaning: weekly BTC, SMA-8 in / SMA-16 out (the "gate"), same-bar Sunday close fill, 0.15% per fill, start cash, inclusive `>=` / `<=`. V1 is this freeze, not a new rule.
+The user named the locked best-so-far **SMAGateV1** (2026-09-18). Runner stays `python -m price_forecast.sma8_16_kpis` (`price_forecast/sma8_16_kpis.py`); the Python file is not renamed. Meaning: weekly BTC, SMA-8 in / SMA-16 out (the "gate"), same-bar Sunday close fill, 0.15% per fill, start cash. **2026-09-20:** on the line is HOLD — buy only if close is **strictly above** SMA-8, sell only if close is **strictly below** SMA-16 (`>` / `<`). V1 is this freeze, not a new rule.
 
 Economically the product rule is still buy-8 / sell-16. The original freeze in this note used the weekly bakeoff execution: signal at week t, fill at week t+1, 10 bps, start in BTC, strict inequalities. SMAGateV1 is what the user prefers **if they trade at the weekly close** (contemporaneous fill, not next-week fill). Not investment advice. Still takes ~30-40% crash chapters.
 

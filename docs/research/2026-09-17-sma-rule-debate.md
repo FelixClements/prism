@@ -143,3 +143,15 @@ Two rules are close on the dump the user named: SMA-8 and buy8/sell16. Still pic
 - `price_forecast/sma_asymmetric_10k.py` — frozen `BUY_WEEKS` / `SELL_WEEKS`; 40-week warmup; pre-declared callout vs SMA-8.
 - `price_forecast/sma8_10k.py` — frozen SMA-8 dollar windows.
 - `price_forecast/weekly_bakeoff.py` — `WINDOWS`, `CRASH_WINDOWS`, `LONG_RUN_WINDOW`, `WEALTH_FLOOR = 0.9`, `DD_IMPROVEMENT = 0.10`.
+
+---
+
+## Addendum 2026-09-18 — user-selected KPI scoreboard
+
+The user selected `price_forecast/sma8_16_kpis.py` as **current best-so-far** (2026-09-18). That runner is buy 8 / sell 16 on weekly Coinbase closes, start $10k cash, same-bar fill at the Sunday close, 0.15% per fill, inclusive `>=` / `<=`.
+
+This does **not** replace the v1 product freeze above. Economically the product rule is still buy-8 / sell-16. The freeze in this note used the weekly bakeoff execution: signal at week t, fill at week t+1, 10 bps, start in BTC, strict inequalities. The KPI runner is what the user prefers **if they trade at the weekly close** (contemporaneous fill, not next-week fill).
+
+t+1 bakeoff numbers in this note still stand for that execution assumption. Do not mix the two scoreboards. The KPI runner also does not report 2022 and Oct 2025–Jun 2026 max DD as separate frozen windows; that dump-goal check still lives on the t+1 $10k tables.
+
+Source: `price_forecast/sma8_16_kpis_results.md`.

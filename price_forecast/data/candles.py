@@ -144,9 +144,14 @@ def update_coinbase_file(
     fetched = parse_coinbase_ohlc(fetch(start, today))
     if existing:
         last = existing[-1].day
-        kept = tuple(candle for candle in existing if candle.day < last)
-        fresh = tuple(candle for candle in fetched if candle.day >= last)
-        rows = kept + fresh
+        fetched_days = {candle.day for candle in fetched}
+        if last in fetched_days:
+            kept = tuple(candle for candle in existing if candle.day < last)
+            fresh = tuple(candle for candle in fetched if candle.day >= last)
+            rows = kept + fresh
+        else:
+            fresh = tuple(candle for candle in fetched if candle.day > last)
+            rows = existing + fresh
     else:
         rows = fetched
     write_candles(dest, rows)
@@ -181,7 +186,7 @@ def _validate(candles: Sequence[Candle]) -> tuple[Candle, ...]:
             ("open", candle.open),
             ("close", candle.close),
         ):
-            if value <= 0:
+            if not math.isfinite(value) or not (value > 0):
                 raise ValueError(f"{name} must be positive")
         if candle.high < candle.open or candle.high < candle.close:
             raise ValueError(f"high below open or close on {candle.day}")
@@ -219,6 +224,8 @@ def _price(raw: str | None, name: str) -> float:
         value = float(raw)
     except ValueError as exc:
         raise ValueError(f"{name} is not a number") from exc
+    if not math.isfinite(value) or not (value > 0):
+        raise ValueError(f"{name} must be positive")
     return value
 
 

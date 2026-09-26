@@ -78,6 +78,19 @@ def test_rejects_bad_candles(tmp_path: Path):
         assert not path.exists()
 
 
+def test_rejects_nan_close_on_read_and_write(tmp_path: Path):
+    path = tmp_path / "nan.csv"
+    path.write_text(
+        "time,low,high,open,close,volume\n2020-01-01,9,11,10,nan,\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError):
+        read_candles(path)
+    nan_close = (Candle(date(2020, 1, 1), 9, 11, 10, float("nan"), None),)
+    with pytest.raises(ValueError):
+        write_candles(path, nan_close)
+
+
 def test_rejects_nan_volume_on_read_and_write(tmp_path: Path):
     path = tmp_path / "nan.csv"
     path.write_text(
@@ -155,6 +168,28 @@ def test_parse_coinbase_keeps_ohlc_order():
     assert rows[0].open == pytest.approx(41)
     assert rows[0].close == pytest.approx(42)
     assert rows[0].volume == pytest.approx(1)
+
+
+def test_update_keeps_last_candle_when_refetch_omits_it(tmp_path: Path):
+    path = tmp_path / "btc.csv"
+    calls: list[tuple[date, date]] = []
+
+    def fetch(start: date, end: date):
+        calls.append((start, end))
+        if len(calls) == 1:
+            return [_raw(date(2020, 1, 1), 10), _raw(date(2020, 1, 3), 30)]
+        return [_raw(date(2020, 1, 5), 50)]
+
+    update_coinbase_file(path, today=date(2020, 1, 3), fetch=fetch)
+    update_coinbase_file(path, today=date(2020, 1, 5), fetch=fetch)
+    rows = read_candles(path)
+    assert [row.day for row in rows] == [
+        date(2020, 1, 1),
+        date(2020, 1, 3),
+        date(2020, 1, 5),
+    ]
+    assert rows[1].close == pytest.approx(30)
+    assert rows[2].close == pytest.approx(50)
 
 
 def test_update_replaces_last_day_and_keeps_earlier_hole(tmp_path: Path):

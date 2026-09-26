@@ -1,22 +1,25 @@
 """Walk-forward bakeoff: Chronos-2 vs last-value vs zero-return.
 
 Usage:
-    python3 -m price_forecast.bakeoff
+    python3 -m price_forecast.forecast.bakeoff
 """
 
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from pathlib import Path
 
-from price_forecast.chronos import ChronosPredictor
-from price_forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
-from price_forecast.predictors import LastValuePredictor, ZeroReturnPredictor
+from price_forecast.forecast.chronos import ChronosPredictor
+from price_forecast.forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
+from price_forecast.forecast.predictors import LastValuePredictor, ZeroReturnPredictor
 from price_forecast.data.series import (
     BTC_CLOSE_PRODUCT,
     BTC_CLOSE_SOURCE,
     BTC_CLOSE_TIMEZONE,
     load_daily_closes,
 )
+
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
 
 
 def main() -> None:

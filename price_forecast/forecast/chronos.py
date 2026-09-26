@@ -7,7 +7,7 @@ from typing import Sequence, TYPE_CHECKING
 
 import numpy as np
 
-from price_forecast.predictors import Forecast
+from price_forecast.forecast.predictors import Forecast
 
 if TYPE_CHECKING:
     from price_forecast.data.series import PriceSeries

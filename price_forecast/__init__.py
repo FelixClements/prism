@@ -1,11 +1,11 @@
 """Walk-forward scoreboard for short-horizon Bitcoin price forecasts.
 
-Not the README ensemble.
+Not the README ensemble. Not SMAGateV1.
 """
 
-from price_forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
-from price_forecast.chronos import ChronosPredictor
-from price_forecast.predictors import (
+from price_forecast.forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
+from price_forecast.forecast.chronos import ChronosPredictor
+from price_forecast.forecast.predictors import (
     ArimaGarchPredictor,
     Forecast,
     LastValuePredictor,

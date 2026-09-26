@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from typing import Mapping, Sequence
 
 from price_forecast.predictors import Forecast, Predictor
-from price_forecast.series import PriceSeries
+from price_forecast.data.series import PriceSeries
 
 HORIZONS: tuple[int, ...] = (1, 3, 7, 10)
 WINDOWS: dict[str, tuple[date, date]] = {

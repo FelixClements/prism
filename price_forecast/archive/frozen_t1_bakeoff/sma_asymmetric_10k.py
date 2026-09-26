@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from price_forecast.series import (
+from price_forecast.data.series import (
     BTC_CLOSE_PRODUCT,
     BTC_CLOSE_SOURCE,
     BTC_CLOSE_TIMEZONE,
@@ -25,6 +25,7 @@ from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import (
     LONG_RUN_WINDOW,
     WINDOWS,
 )
+from price_forecast.data.weekly import weekly_closes
 from price_forecast.weekly_regime import (
     COST_BPS,
     DD_IMPROVEMENT,
@@ -34,7 +35,6 @@ from price_forecast.weekly_regime import (
     dollar_backtest,
     sma_first_fill_date,
     sma_signal,
-    weekly_closes,
 )
 
 BUY_WEEKS = (4, 6, 8, 10, 12)

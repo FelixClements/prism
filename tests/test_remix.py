@@ -14,9 +14,9 @@ from price_forecast.remix import (
     remix_sanity,
     stylized_facts,
 )
-from price_forecast.series import PriceSeries
+from price_forecast.data.series import PriceSeries
 from price_forecast.sma8_16_kpis import simulate_strategy
-from price_forecast.weekly_regime import weekly_closes
+from price_forecast.data.weekly import weekly_closes
 
 
 def _closes(series: PriceSeries) -> list[float]:

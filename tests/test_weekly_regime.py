@@ -7,7 +7,8 @@ from typing import Sequence
 
 import pytest
 
-from price_forecast.series import PriceSeries
+from price_forecast.data.series import PriceSeries
+from price_forecast.data.weekly import weekly_closes
 from price_forecast.weekly_regime import (
     COST_BPS,
     SMA8_LOOKBACK,
@@ -25,7 +26,6 @@ from price_forecast.weekly_regime import (
     sma8_first_fill_date,
     sma_first_fill_date,
     sma_signal,
-    weekly_closes,
 )
 
 

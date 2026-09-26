@@ -66,13 +66,13 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Sequence
 
-from price_forecast.series import (
+from price_forecast.data.series import (
     BTC_CLOSE_PRODUCT,
     BTC_CLOSE_SOURCE,
     BTC_CLOSE_TIMEZONE,
     load_daily_closes,
 )
-from price_forecast.weekly_regime import weekly_closes
+from price_forecast.data.weekly import weekly_closes
 
 BUY_WEEKS = 8
 SELL_WEEKS = 16

@@ -17,7 +17,7 @@ from price_forecast import (
     LeakageError,
     evaluate,
 )
-from price_forecast.series import PriceSeries
+from price_forecast.data.series import PriceSeries
 
 
 def _noisy_daily(

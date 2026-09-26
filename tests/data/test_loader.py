@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 
 import pytest
 
-from price_forecast.series import (
+from price_forecast.data.series import (
     BTC_CLOSE_SOURCE,
     BTC_CLOSE_TIMEZONE,
     bars_from_coinbase_candles,

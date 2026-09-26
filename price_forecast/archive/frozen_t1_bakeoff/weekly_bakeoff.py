@@ -14,12 +14,13 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from price_forecast.archive.frozen_t1_bakeoff.fng import FNG_API_URL, FNG_SOURCE, load_fng
-from price_forecast.series import (
+from price_forecast.data.series import (
     BTC_CLOSE_PRODUCT,
     BTC_CLOSE_SOURCE,
     BTC_CLOSE_TIMEZONE,
     load_daily_closes,
 )
+from price_forecast.data.weekly import weekly_closes
 from price_forecast.weekly_regime import (
     COST_BPS,
     FNG_FEAR_ENTRY,
@@ -35,7 +36,6 @@ from price_forecast.weekly_regime import (
     pass_a,
     pass_c,
     sma_signal,
-    weekly_closes,
 )
 
 STRATEGIES = [

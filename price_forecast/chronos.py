@@ -10,7 +10,7 @@ import numpy as np
 from price_forecast.predictors import Forecast
 
 if TYPE_CHECKING:
-    from price_forecast.series import PriceSeries
+    from price_forecast.data.series import PriceSeries
 
 CHRONOS_CHECKPOINT = "amazon/chronos-2"
 _QUANTILE_LEVELS: tuple[float, ...] = (0.05, 0.1, 0.5, 0.9, 0.95)

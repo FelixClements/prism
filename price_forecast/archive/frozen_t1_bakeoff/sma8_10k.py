@@ -13,13 +13,14 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from price_forecast.series import (
+from price_forecast.data.series import (
     BTC_CLOSE_PRODUCT,
     BTC_CLOSE_SOURCE,
     BTC_CLOSE_TIMEZONE,
     load_daily_closes,
 )
 from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
+from price_forecast.data.weekly import weekly_closes
 from price_forecast.weekly_regime import (
     COST_BPS,
     SMA8_LOOKBACK,
@@ -27,7 +28,6 @@ from price_forecast.weekly_regime import (
     dollar_backtest,
     sma8_first_fill_date,
     sma_signal,
-    weekly_closes,
 )
 
 STARTING_DOLLARS = 10_000.0

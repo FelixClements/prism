@@ -11,7 +11,7 @@ from datetime import date, datetime, timezone
 from price_forecast.chronos import ChronosPredictor
 from price_forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
 from price_forecast.predictors import LastValuePredictor, ZeroReturnPredictor
-from price_forecast.series import (
+from price_forecast.data.series import (
     BTC_CLOSE_PRODUCT,
     BTC_CLOSE_SOURCE,
     BTC_CLOSE_TIMEZONE,

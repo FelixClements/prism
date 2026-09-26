@@ -12,7 +12,7 @@ from price_forecast.predictors import (
     Predictor,
     ZeroReturnPredictor,
 )
-from price_forecast.series import LeakageError, load_daily_closes, synthetic_daily
+from price_forecast.data.series import LeakageError, load_daily_closes, synthetic_daily
 
 __all__ = [
     "HORIZONS",

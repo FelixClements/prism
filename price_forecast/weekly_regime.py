@@ -1,8 +1,9 @@
 """Weekly BTC helpers and the archived t+1 in/out engine. Not a dollar-close forecast.
 
-Live freeze is SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). This module
-still supplies `weekly_closes` to that runner. The t+1 / 10 bp / strict-inequality
-backtest below belongs to `price_forecast/archive/frozen_t1_bakeoff/`.
+Live freeze is SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). Weekly
+bars come from `price_forecast.data.weekly.weekly_closes`. The t+1 / 10 bp /
+strict-inequality backtest below belongs to
+`price_forecast/archive/frozen_t1_bakeoff/`.
 
 Frozen t+1 rules (do not retune after seeing results):
 
@@ -20,10 +21,8 @@ Frozen t+1 rules (do not retune after seeing results):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 from typing import Sequence
-
-from price_forecast.series import PriceSeries
 
 COST_BPS = 10
 _COST = COST_BPS / 10_000
@@ -69,25 +68,6 @@ class DollarBacktestResult:
     last_signal: int | None
     start_price: float
     end_price: float
-
-
-def _sunday_week_end(day: date) -> date:
-    return day + timedelta(days=(6 - day.weekday()))
-
-
-def weekly_closes(series: PriceSeries) -> list[tuple[date, float]]:
-    """Last UTC daily close in each complete Sunday-ending week."""
-    last_day = series.dates()[-1]
-    buckets: dict[date, tuple[date, float]] = {}
-    for day in series.dates():
-        week_end = _sunday_week_end(day)
-        buckets[week_end] = (day, series.close_at(day))
-    weeks = []
-    for week_end in sorted(buckets):
-        if week_end > last_day:
-            continue
-        weeks.append((week_end, buckets[week_end][1]))
-    return weeks
 
 
 def sma_signal(

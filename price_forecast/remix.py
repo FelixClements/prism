@@ -23,8 +23,8 @@ import numpy as np
 from arch.bootstrap import StationaryBootstrap, optimal_block_length
 from scipy.stats import kurtosis
 
-from price_forecast.series import PriceSeries, load_daily_closes
-from price_forecast.weekly_regime import weekly_closes
+from price_forecast.data.series import PriceSeries, load_daily_closes
+from price_forecast.data.weekly import weekly_closes
 
 MEAN_BLOCK_BARS = 182
 _FACT_KEYS: tuple[str, ...] = (

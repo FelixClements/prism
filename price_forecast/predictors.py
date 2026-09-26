@@ -15,7 +15,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller
 
 if TYPE_CHECKING:
-    from price_forecast.series import PriceSeries
+    from price_forecast.data.series import PriceSeries
 
 
 @dataclass(frozen=True)

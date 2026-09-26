@@ -4,7 +4,7 @@ Do **not** use this package for new work. It is the frozen t+1 SMA bakeoff, kept
 only as history. The live freeze is **SMAGateV1**.
 
 ```bash
-.venv/bin/python -m price_forecast.sma8_16_kpis
+.venv/bin/python -m price_forecast.strategies.smagate_v1
 ```
 
 ## What these rules were
@@ -30,7 +30,7 @@ scoreboards.
 | `sma_asymmetric_10k.py` + `sma_asymmetric_10k_results.md` | Frozen 24-cell buy/sell grid |
 | `fng.py` | Alternative.me F&G loader, used only by this bakeoff overlay |
 
-Shared week helper `weekly_closes` stays live in `price_forecast/weekly_regime.py`
+Shared week helper `weekly_closes` stays live in `price_forecast/data/weekly.py`
 because SMAGateV1 still imports it.
 
 Historical tests: `tests/archive/frozen_t1_bakeoff/` (collected with pytest; they
@@ -39,7 +39,7 @@ are historical, not the live freeze).
 Historical re-run (not for new work):
 
 ```bash
-.venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff
-.venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma8_10k
-.venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k
+.venv/bin/python -m archive.frozen_t1_bakeoff.weekly_bakeoff
+.venv/bin/python -m archive.frozen_t1_bakeoff.sma8_10k
+.venv/bin/python -m archive.frozen_t1_bakeoff.sma_asymmetric_10k
 ```

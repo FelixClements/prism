@@ -380,5 +380,5 @@ Each row is one UTC calendar month of Sunday weekly bars. Monthly return is that
 How to re-run:
 
 ```
-.venv/bin/python -m price_forecast.sma8_16_kpis
+.venv/bin/python -m price_forecast.strategies.smagate_v1
 ```

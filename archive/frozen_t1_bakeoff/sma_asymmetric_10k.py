@@ -1,7 +1,7 @@
 """OLD. Superseded by SMAGateV1. Asymmetric SMA $10k grid (t+1, 10 bps, start BTC).
 
 Do not use for new work. Live freeze:
-    .venv/bin/python -m price_forecast.sma8_16_kpis
+    .venv/bin/python -m price_forecast.strategies.smagate_v1
 
 Historical re-run:
     .venv/bin/python -m archive.frozen_t1_bakeoff.sma_asymmetric_10k
@@ -182,7 +182,7 @@ def format_report(
         "# Asymmetric SMA grid vs SMA-8 and buy-and-hold, $10k start",
         "",
         "**OLD. Superseded by SMAGateV1.** Do not use for new work. "
-        "Live freeze: `python -m price_forecast.sma8_16_kpis`.",
+        "Live freeze: `python -m price_forecast.strategies.smagate_v1`.",
         "",
         "Not investment advice. This is a backtest of a frozen weekly t+1 grid, not a new product rule.",
         "",
@@ -242,9 +242,9 @@ def format_report(
         ".venv/bin/python -m archive.frozen_t1_bakeoff.sma_asymmetric_10k",
         "```",
         "",
-        "OLD. Superseded by SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). "
+        "OLD. Superseded by SMAGateV1 (`python -m price_forecast.strategies.smagate_v1`). "
         "Writes `archive.frozen_t1_bakeoff/sma_asymmetric_10k_results.md`. "
-        "State machine is `asymmetric_sma_signal` in `price_forecast/weekly_regime.py`. "
+        "State machine is `asymmetric_sma_signal` in `price_forecast/strategies/signals.py`. "
         "Dollar fills reuse `dollar_backtest`.",
         "",
     ]

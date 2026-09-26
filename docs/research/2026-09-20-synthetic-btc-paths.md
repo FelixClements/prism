@@ -5,7 +5,7 @@
 **Question:** How should Prism emit extra Bitcoin-like daily histories so a later run of the *already frozen* SMAGateV1 rule (SMA-8 in / SMA-16 out) can be stress-tested without retuning on one Coinbase path?  
 **This note is the spec for the history factory.** It does not pick a new SMA pair. It does not score 8/16 on remixed paths.
 
-**Code:** `python -m price_forecast.remix` — `price_forecast/remix.py`. Real tape: Coinbase BTC-USD daily closes via `load_daily_closes(source="coinbase")`. Weeks: existing `weekly_closes`.
+**Code:** `python -m price_forecast.remix.remix` — `price_forecast/remix/remix.py`. Real tape: Coinbase BTC-USD daily closes via `load_daily_closes(source="coinbase")`. Weeks: existing `weekly_closes`.
 
 ---
 
@@ -17,11 +17,11 @@ Ship a **history factory**, not a new rule. Remix the real Coinbase daily *log-r
 
 ## What this factory is for
 
-SMAGateV1 is frozen: weekly BTC, buy when close is strictly above SMA-8, sell when strictly below SMA-16, same-bar Sunday fill, 0.15% per fill (`price_forecast/sma8_16_kpis.py`). That freeze was named after looking at the Coinbase path. One movie. A rule can look good because it sat in cash during *this* 2022 hole and *this* 2025–26 grind.
+SMAGateV1 is frozen: weekly BTC, buy when close is strictly above SMA-8, sell when strictly below SMA-16, same-bar Sunday fill, 0.15% per fill (`price_forecast/strategies/smagate_v1.py`). That freeze was named after looking at the Coinbase path. One movie. A rule can look good because it sat in cash during *this* 2022 hole and *this* 2025–26 grind.
 
 The factory’s job is extra movies that still use real Bitcoin return chunks, in a new order, so a *later* job can run the **same** 8/16 state machine and look at a cloud of full-path KPIs. Calendar labels (2022, Oct 2025–Jun 2026) die when you shuffle. Later scoring is full-path only.
 
-**Not the job:** generate training data for Chronos. Invent dumps worse than anything in the tape. Re-open `{4,6,8,10,12} × {12,16,20,26,40}`. Replace `synthetic_daily` in `price_forecast/series.py` (that stub is deterministic unit-test drift).
+**Not the job:** generate training data for Chronos. Invent dumps worse than anything in the tape. Re-open `{4,6,8,10,12} × {12,16,20,26,40}`. Replace `synthetic_daily` in `price_forecast/data/series.py` (that stub is deterministic unit-test drift).
 
 ---
 
@@ -64,7 +64,7 @@ A later GARCH-t simulation (`arch_model.simulate`) is a valid **negative control
 
 ## What to do, in order
 
-1. **This job (done when `price_forecast/remix.py` lands):** emit seeded `PriceSeries` paths; print a sanity comparison vs real and vs `mean_block_bars=1`. Do not retune 8/16.
+1. **This job (done when `price_forecast/remix/remix.py` lands):** emit seeded `PriceSeries` paths; print a sanity comparison vs real and vs `mean_block_bars=1`. Do not retune 8/16.
 2. **Next job (not this factory):** run SMAGateV1 vs buy-and-hold on N remixed paths. Publish the KPI *cloud* (median, 10th/90th of max DD and ending wealth vs hold). Full-path only. No new lookback.
 3. **Later, if that cloud is not a spike around the historical number:** optional GARCH-t negative control; then CSCV/PBO and DSR on the *real* trial matrix if anyone reopens a grid. Do not reopen a grid to make PBO look good.
 
@@ -85,5 +85,5 @@ A later GARCH-t simulation (`arch_model.simulate`) is a valid **negative control
 - Cont, R. (2001). “Empirical Properties of Asset Returns: Stylized Facts and Statistical Issues.” *Quantitative Finance*, 1, 223–236. [PDF](http://rama.cont.perso.math.cnrs.fr/pdf/empirical.pdf).
 - Bariviera, A. F., Basgall, M. J., Hasperué, W., & Naiouf, M. (2017). “Some Stylized Facts of the Bitcoin Market.” *Physica A*, 484. [arXiv:1708.04532](https://arxiv.org/abs/1708.04532).
 - `docs/research/2026-09-17-sma-rule-debate.md` — freeze of buy8/sell16; SMAGateV1 addendum.
-- `price_forecast/sma8_16_kpis.py` — live SMAGateV1 runner. Do not retune.
-- `price_forecast/series.py` — `synthetic_daily` stays a unit-test stub; Coinbase is the real tape.
+- `price_forecast/strategies/smagate_v1.py` — live SMAGateV1 runner. Do not retune.
+- `price_forecast/data/series.py` — `synthetic_daily` stays a unit-test stub; Coinbase is the real tape.

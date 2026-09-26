@@ -9,13 +9,13 @@ Caveats:
 - Same-bar weekly close fill: SMA at week t includes close t and the fill is close t. That is contemporaneous fill, not future lookahead. It is more optimistic than the frozen t+1 bakeoff.
 - Start in cash (FLAT) until the first close > SMA-8 after SMA-16 exists. The frozen $10k crash-window tables start in BTC.
 - 0.15% of notional on each fill. Frozen bakeoff uses 10 bps; this runner now also uses strict > / < (on the line is HOLD).
-- Not the frozen t+1 bakeoff (archived at `price_forecast/archive/frozen_t1_bakeoff/`).
+- Not the frozen t+1 bakeoff (archived at `archive/frozen_t1_bakeoff/`).
 - Full-sample KPIs in this table. Monthly rows and the 2022 / Oct 2025–Jun 2026 chapters are in `sma8_16_kpis_monthly.md` (also `.csv`). A full-sample dollar figure can still hide a bad crash window; SMAGateV1 still takes ~30-40% crash chapters. Read those months.
 
 Same-bar fill at the weekly close (more optimistic than the frozen t+1 bakeoff).
 Cost is 0.15% per fill vs the frozen bakeoff's 10 bps. Entry uses close > SMA-8;
 exit uses close < SMA-16 (on the line is HOLD). Do not compare these
-dollars to `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` as if the rules were the same.
+dollars to `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` as if the rules were the same.
 
 Date range: 2018-04-22 → 2026-09-20 (440 comparable weekly bars after SMA-16 warmup).
 Start $: $10,000.00
@@ -50,8 +50,8 @@ Fee drag on total return                           +202.84 pp         +1.38 pp
 How to re-run:
 
 ```
-.venv/bin/python -m price_forecast.sma8_16_kpis
-.venv/bin/python -m price_forecast.sma8_16_kpis --starting-dollars 10000
+.venv/bin/python -m price_forecast.strategies.smagate_v1
+.venv/bin/python -m price_forecast.strategies.smagate_v1 --starting-dollars 10000
 ```
 
 Monthly + cumulative-to-date grid: `sma8_16_kpis_monthly.md` / `sma8_16_kpis_monthly.csv`.

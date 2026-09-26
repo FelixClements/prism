@@ -1,7 +1,7 @@
 """OLD. Superseded by SMAGateV1. Weekly in/out bakeoff (t+1, 10 bps).
 
 Do not use for new work. Live freeze:
-    .venv/bin/python -m price_forecast.sma8_16_kpis
+    .venv/bin/python -m price_forecast.strategies.smagate_v1
 
 Historical re-run:
     .venv/bin/python -m archive.frozen_t1_bakeoff.weekly_bakeoff
@@ -225,7 +225,7 @@ def format_report(
         "# Weekly in/out bakeoff",
         "",
         "**OLD. Superseded by SMAGateV1.** Do not use for new work. "
-        "Live freeze: `python -m price_forecast.sma8_16_kpis`.",
+        "Live freeze: `python -m price_forecast.strategies.smagate_v1`.",
         "",
         "Not investment advice. Frozen t+1 rules; no lookback or F&G-threshold search after seeing results.",
         "",
@@ -316,7 +316,7 @@ def format_report(
     lines.append(_fng_overlay_blurb(by_window))
     lines.append("")
     lines.append(
-        "OLD. Superseded by SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). "
+        "OLD. Superseded by SMAGateV1 (`python -m price_forecast.strategies.smagate_v1`). "
         "Historical command: `.venv/bin/python -m archive.frozen_t1_bakeoff.weekly_bakeoff`"
     )
     lines.append("")

@@ -371,7 +371,7 @@ def format_report(report: KpiReport) -> str:
         "The frozen $10k crash-window tables start in BTC.",
         "- 0.15% of notional on each fill. Frozen bakeoff uses 10 bps; this runner now also "
         "uses strict > / < (on the line is HOLD).",
-        "- Not the frozen t+1 bakeoff (archived at `price_forecast/archive/frozen_t1_bakeoff/`).",
+        "- Not the frozen t+1 bakeoff (archived at `archive/frozen_t1_bakeoff/`).",
         "- Full-sample KPIs in this table. Monthly rows and the 2022 / Oct 2025–Jun 2026 "
         "chapters are in `sma8_16_kpis_monthly.md` (also `.csv`). A full-sample dollar "
         "figure can still hide a bad crash window; SMAGateV1 still takes ~30-40% crash "
@@ -380,7 +380,7 @@ def format_report(report: KpiReport) -> str:
         "Same-bar fill at the weekly close (more optimistic than the frozen t+1 bakeoff).",
         "Cost is 0.15% per fill vs the frozen bakeoff's 10 bps. Entry uses close > SMA-8;",
         "exit uses close < SMA-16 (on the line is HOLD). Do not compare these",
-        "dollars to `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` "
+        "dollars to `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` "
         "as if the rules were the same.",
         "",
         f"Date range: {report.start.isoformat()} → {report.end.isoformat()} "

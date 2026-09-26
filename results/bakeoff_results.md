@@ -1,6 +1,6 @@
 # Bakeoff results
 
-This dollar-close forecast bakeoff is historical. The live strategy freeze is SMAGateV1 (`python -m price_forecast.sma8_16_kpis`).
+This dollar-close forecast bakeoff is historical. The live strategy freeze is SMAGateV1 (`python -m price_forecast.strategies.smagate_v1`).
 
 ARIMA+GARCH was the classical baseline (PR #2). Chronos-2 is the univariate foundation-model follow-up. Same Coinbase BTC-USD daily close (UTC), same windows, same 1/3/7/10-day dollar MAE vs last-value and zero-return. Neither model is retuned against this table.
 

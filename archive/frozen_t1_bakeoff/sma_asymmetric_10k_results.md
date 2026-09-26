@@ -1,6 +1,6 @@
 # Asymmetric SMA grid vs SMA-8 and buy-and-hold, $10k start
 
-**OLD. Superseded by SMAGateV1.** Do not use for new work. Live freeze: `python -m price_forecast.sma8_16_kpis`.
+**OLD. Superseded by SMAGateV1.** Do not use for new work. Live freeze: `python -m price_forecast.strategies.smagate_v1`.
 
 Not investment advice. This is a backtest of a frozen weekly t+1 grid, not a new product rule.
 
@@ -233,4 +233,4 @@ I would not replace frozen SMA-8 with whichever cell printed the highest full-sa
 .venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k
 ```
 
-OLD. Superseded by SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). Writes `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md`. State machine is `asymmetric_sma_signal` in `price_forecast/weekly_regime.py`. Dollar fills reuse `dollar_backtest`.
+OLD. Superseded by SMAGateV1 (`python -m price_forecast.strategies.smagate_v1`). Writes `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md`. State machine is `asymmetric_sma_signal` in `price_forecast/strategies/signals.py`. Dollar fills reuse `dollar_backtest`.

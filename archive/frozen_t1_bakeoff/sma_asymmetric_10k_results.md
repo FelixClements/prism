@@ -230,7 +230,7 @@ I would not replace frozen SMA-8 with whichever cell printed the highest full-sa
 ## How to re-run
 
 ```
-.venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k
+.venv/bin/python -m archive.frozen_t1_bakeoff.sma_asymmetric_10k
 ```
 
 OLD. Superseded by SMAGateV1 (`python -m price_forecast.strategies.smagate_v1`). Writes `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md`. State machine is `asymmetric_sma_signal` in `price_forecast/strategies/signals.py`. Dollar fills reuse `dollar_backtest`.

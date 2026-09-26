@@ -121,7 +121,7 @@ Inherited-position bakeoff (scaled to $10k of starting wealth): $14,751.30 end, 
 ## How to re-run
 
 ```
-.venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma8_10k
+.venv/bin/python -m archive.frozen_t1_bakeoff.sma8_10k
 ```
 
 OLD. Superseded by SMAGateV1 (`python -m price_forecast.strategies.smagate_v1`). Writes `archive/frozen_t1_bakeoff/sma8_10k_results.md`. Frozen SMA-8 is `sma_signal(..., lookback=8)` in `price_forecast/strategies/signals.py`.

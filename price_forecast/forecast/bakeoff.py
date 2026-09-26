@@ -79,7 +79,7 @@ def _format_report(
         "on the univariate close series.",
         f"- Device: {device_map}.",
         "- Point forecast is the 0.5 quantile. No extra features. No conformal floor.",
-        "- Command: `python3 -m price_forecast.bakeoff`",
+        "- Command: `python3 -m price_forecast.forecast.bakeoff`",
         "- No hyperparameter search against the bakeoff table. No trading P&L.",
         "",
     ]

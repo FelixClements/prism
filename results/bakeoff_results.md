@@ -12,7 +12,7 @@ ARIMA+GARCH was the classical baseline (PR #2). Chronos-2 is the univariate foun
 - History: 2018-01-01 to 2026-09-17 (3182 days).
 - ADF p-value on full-sample log-returns (FPP2 hygiene): 0.
 - Model: ARIMA(1,0,1) on log-returns (fallback AR(1), then mean); GARCH(1,1) on residuals (fallback EGARCH, then sample variance); invert cumulative log-returns to price.
-- Command: `python3 -m price_forecast.bakeoff` (historical; the entry point now runs Chronos-2)
+- Command: `python3 -m price_forecast.forecast.bakeoff` (historical; the entry point now runs Chronos-2)
 - No order search against the bakeoff table. No trading P&L.
 
 ## 2022
@@ -54,7 +54,7 @@ It lost. No tuning was applied to chase a win.
 - Model: zero-shot `amazon/chronos-2` via chronos-forecasting 2.3.2 on the univariate close series.
 - Device: mps (Apple GPU). CUDA was not available. Point forecast is the 0.5 quantile.
 - No extra features. No conformal floor. No hyperparameter search.
-- Command: `python3 -m price_forecast.bakeoff`
+- Command: `python3 -m price_forecast.forecast.bakeoff`
 - Last-value MAE in 2024–2026 differs by a few cents from the ARIMA table because today's Coinbase candle moved between runs.
 
 ## 2022

@@ -6,28 +6,30 @@ Usage:
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+import argparse
 from pathlib import Path
+from typing import Sequence
 
-from price_forecast.forecast.chronos import ChronosPredictor
-from price_forecast.forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
-from price_forecast.forecast.predictors import LastValuePredictor, ZeroReturnPredictor
+from price_forecast.data.candles import BTC_USD_DAILY_CSV, require_closes
 from price_forecast.data.series import (
     BTC_CLOSE_PRODUCT,
     BTC_CLOSE_SOURCE,
     BTC_CLOSE_TIMEZONE,
-    load_daily_closes,
 )
+from price_forecast.forecast.chronos import ChronosPredictor
+from price_forecast.forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
+from price_forecast.forecast.predictors import LastValuePredictor, ZeroReturnPredictor
 
 RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
 
 
-def main() -> None:
-    series = load_daily_closes(
-        source="coinbase",
-        start=date(2018, 1, 1),
-        end=datetime.now(timezone.utc).date(),
+def main(argv: Sequence[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(
+        description="Walk-forward bakeoff on a candle CSV. Does not download."
     )
+    parser.add_argument("--csv", type=Path, default=BTC_USD_DAILY_CSV)
+    args = parser.parse_args(argv)
+    series = require_closes(args.csv)
     chronos = ChronosPredictor()
     models = {
         "last-value": LastValuePredictor(),

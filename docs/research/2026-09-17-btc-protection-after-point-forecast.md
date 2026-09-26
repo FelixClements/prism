@@ -6,7 +6,7 @@
 
 **Sources of truth used:** this repo (README, `price_forecast/`, PRs), Coinbase Exchange public daily candles (same loader as the bakeoff), first-party exchange/product docs, Chronos-2 and Adaptive Conformal Inference papers. Secondary write-ups were not used as evidence.
 
-**Where this lives:** the repo had no research-notes folder. The only existing measured note is `price_forecast/bakeoff_results.md` (a scoreboard, not a brief). This file is therefore under `docs/research/`. It was not committed.
+**Where this lives:** the repo had no research-notes folder. The only existing measured note is `results/bakeoff_results.md` (a scoreboard, not a brief). This file is therefore under `docs/research/`. It was not committed.
 
 **No implementation was done.** Drawdown numbers below were computed from Coinbase candles on 2026-09-17 with the existing loader; the computation scripts were not added to the repo.
 
@@ -40,10 +40,10 @@ The README’s own critique already flags a failure mode that later showed up on
 
 | Artifact | What it is | What it is not |
 | --- | --- | --- |
-| `price_forecast/harness.py` | Walk-forward loop: at day `t`, forecast `t+1/3/7/10` from data ≤ `t`. Score MAE, MAPE, hit rate, 80%/90% coverage of the later *close*. Windows: 2022 and 2024–2026. | Not 3–14d swing P&L. Not a safety floor. Not dump classification. |
-| `price_forecast/predictors.py` | Last-value, zero-return, ARIMA+GARCH (log-returns → price; GARCH/EGARCH Gaussian bands). | Last-value has no bands. No conformal. |
-| `price_forecast/chronos.py` (uncommitted as of this note) | Zero-shot `amazon/chronos-2`; point = 0.5 quantile; 80% band = 0.1–0.9; 90% band = 0.05–0.95. Univariate close only. | No covariates, no conformal floor. |
-| `price_forecast/series.py` | Coinbase Exchange public daily candles, product `BTC-USD`, granularity 86400, UTC. | Loader stores **close only**; high/low exist on the wire but are discarded. |
+| `price_forecast/forecast/harness.py` | Walk-forward loop: at day `t`, forecast `t+1/3/7/10` from data ≤ `t`. Score MAE, MAPE, hit rate, 80%/90% coverage of the later *close*. Windows: 2022 and 2024–2026. | Not 3–14d swing P&L. Not a safety floor. Not dump classification. |
+| `price_forecast/forecast/predictors.py` | Last-value, zero-return, ARIMA+GARCH (log-returns → price; GARCH/EGARCH Gaussian bands). | Last-value has no bands. No conformal. |
+| `price_forecast/forecast/chronos.py` (uncommitted as of this note) | Zero-shot `amazon/chronos-2`; point = 0.5 quantile; 80% band = 0.1–0.9; 90% band = 0.05–0.95. Univariate close only. | No covariates, no conformal floor. |
+| `price_forecast/data/series.py` | Coinbase Exchange public daily candles, product `BTC-USD`, granularity 86400, UTC. | Loader stores **close only**; high/low exist on the wire but are discarded. |
 | `price_forecast/__init__.py` | “Walk-forward scoreboard for short-horizon Bitcoin price forecasts. **Not the README ensemble.**” | — |
 | `pyproject.toml` | Package name `price-forecast`; description “Walk-forward harness for short-horizon Bitcoin price forecasts.” | — |
 
@@ -55,19 +55,19 @@ Recent git log on `main` (through this note): `d50d5b9` Initial commit → `be22
 
 ### What the bakeoff actually measured
 
-Both models were scored on **dollar MAE of the point forecast** against last-value and zero-return. Those two naive predictors are the same point (“price does not move”), so their MAE matches (`price_forecast/predictors.py` `LastValuePredictor` / `ZeroReturnPredictor`; [PR #2](https://github.com/FelixClements/prism/pull/2)).
+Both models were scored on **dollar MAE of the point forecast** against last-value and zero-return. Those two naive predictors are the same point (“price does not move”), so their MAE matches (`price_forecast/forecast/predictors.py` `LastValuePredictor` / `ZeroReturnPredictor`; [PR #2](https://github.com/FelixClements/prism/pull/2)).
 
-Coverage is a *secondary* column: fraction of later closes that fell inside the 80%/90% band (`price_forecast/harness.py` `_coverage`). Pass/fail ignored coverage.
+Coverage is a *secondary* column: fraction of later closes that fell inside the 80%/90% band (`price_forecast/forecast/harness.py` `_coverage`). Pass/fail ignored coverage.
 
-Numbers from [`price_forecast/bakeoff_results.md`](../../price_forecast/bakeoff_results.md) (series: Coinbase BTC-USD daily close UTC, history 2018-01-01 to 2026-09-17, 3182 days — same count this note re-downloaded):
+Numbers from [`results/bakeoff_results.md`](../../results/bakeoff_results.md) (series: Coinbase BTC-USD daily close UTC, history 2018-01-01 to 2026-09-17, 3182 days — same count this note re-downloaded):
 
 **ARIMA+GARCH lost the frozen MAE spec.** 2022: MAE worse than last-value at every horizon (e.g. 1d 660.93 vs 657.47). 2024–2026: won 1d and 3d by a few dollars, lost 7d and 10d. Hit rate 46–53%. **Verdict: FAIL.**
 
-**GARCH bands were slightly wide, not empty.** 80% coverage 86.6–90.9%; 90% coverage 91.8–95.1%. That is *over*-coverage relative to the nominal 80/90 labels (Gaussian log-return intervals from `norm.ppf` in `price_forecast/predictors.py`).
+**GARCH bands were slightly wide, not empty.** 80% coverage 86.6–90.9%; 90% coverage 91.8–95.1%. That is *over*-coverage relative to the nominal 80/90 labels (Gaussian log-return intervals from `norm.ppf` in `price_forecast/forecast/predictors.py`).
 
-**Chronos-2 also lost the frozen MAE spec at every horizon in both windows.** 2022 1d: 766.34 vs last-value 657.47. 2024–2026 1d: 1,472.55 vs 1,379.18. Hit rate 43–52%. The bakeoff entry point states “Point forecast is the 0.5 quantile. No extra features. No conformal floor.” (`price_forecast/bakeoff.py`). **Verdict: FAIL.** “The dollar-close prediction idea is dead.”
+**Chronos-2 also lost the frozen MAE spec at every horizon in both windows.** 2022 1d: 766.34 vs last-value 657.47. 2024–2026 1d: 1,472.55 vs 1,379.18. Hit rate 43–52%. The bakeoff entry point states “Point forecast is the 0.5 quantile. No extra features. No conformal floor.” (`price_forecast/forecast/bakeoff.py`). **Verdict: FAIL.** “The dollar-close prediction idea is dead.”
 
-**Chronos bands were not well calibrated on this series.** 2022 Cov80 75.6–82.2% (near or under 80%); 2024–2026 Cov80 69.8–83.1%, Cov90 82.5–90.3% — *under*-coverage, worse at 7d/10d. Official Chronos-2 emits 21 trained quantiles including 0.01 and 0.99 and is trained with pinball loss ([arXiv:2510.15821](https://arxiv.org/abs/2510.15821) §architecture: “The inclusion of extreme quantiles (0.01 and 0.99) improves coverage of rare events”). Prism asked for 0.05/0.1/0.5/0.9/0.95 via `predict_quantiles` (`price_forecast/chronos.py`). Uncalibrated quantiles are not a coverage guarantee; that is exactly the gap ACI is designed to wrap ([arXiv:2106.00170](https://arxiv.org/abs/2106.00170) abstract).
+**Chronos bands were not well calibrated on this series.** 2022 Cov80 75.6–82.2% (near or under 80%); 2024–2026 Cov80 69.8–83.1%, Cov90 82.5–90.3% — *under*-coverage, worse at 7d/10d. Official Chronos-2 emits 21 trained quantiles including 0.01 and 0.99 and is trained with pinball loss ([arXiv:2510.15821](https://arxiv.org/abs/2510.15821) §architecture: “The inclusion of extreme quantiles (0.01 and 0.99) improves coverage of rare events”). Prism asked for 0.05/0.1/0.5/0.9/0.95 via `predict_quantiles` (`price_forecast/forecast/chronos.py`). Uncalibrated quantiles are not a coverage guarantee; that is exactly the gap ACI is designed to wrap ([arXiv:2106.00170](https://arxiv.org/abs/2106.00170) abstract).
 
 **Claimed vs measured (one line):** README promised a conformal 0.1-quantile *stop that sells*; the harness measured whether a *median dollar guess* beat “tomorrow equals today.” Coverage of bands was recorded and never used as the pass rule. Dump/floor/conformal/P&L were never scored.
 
@@ -75,7 +75,7 @@ Numbers from [`price_forecast/bakeoff_results.md`](../../price_forecast/bakeoff_
 
 ## 2. 50% drops in BTC (Coinbase BTC-USD, this loader)
 
-**Data.** Same primary source as the bakeoff: Coinbase Exchange `GET /products/BTC-USD/candles` with `granularity=86400` ([Coinbase: Get product candles](https://docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproductcandles); wired in `price_forecast/series.py`). Official candle schema is `[timestamp, price_low, price_high, price_open, price_close]` plus volume. Unix `time` is UTC. Prism’s `bars_from_coinbase_candles` keeps **close only**. High/low figures below were taken from the same endpoint without changing the loader.
+**Data.** Same primary source as the bakeoff: Coinbase Exchange `GET /products/BTC-USD/candles` with `granularity=86400` ([Coinbase: Get product candles](https://docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproductcandles); wired in `price_forecast/data/series.py`). Official candle schema is `[timestamp, price_low, price_high, price_open, price_close]` plus volume. Unix `time` is UTC. Prism’s `bars_from_coinbase_candles` keeps **close only**. High/low figures below were taken from the same endpoint without changing the loader.
 
 Series as of 2026-09-17 UTC: **3182** daily closes, **2018-01-01** close **13,480.01** through **2026-09-17** close **76,808.57**. That matches `bakeoff_results.md` (3182 days, 2018-01-01 to 2026-09-17).
 
@@ -106,7 +106,7 @@ Calendar **2025** alone: max close-to-close drawdown **−32.10%** (2025-10-06 1
 
 ### 2022 (and the 2021–2022 cycle)
 
-2022 as a *calendar year* starts already off the 2021 high. The bakeoff window 2022 is 2022-01-01..2022-12-31 (`price_forecast/harness.py` `WINDOWS`).
+2022 as a *calendar year* starts already off the 2021 high. The bakeoff window 2022 is 2022-01-01..2022-12-31 (`price_forecast/forecast/harness.py` `WINDOWS`).
 
 | Window | Peak | Trough | Drop | Duration |
 | --- | --- | --- | ---: | ---: |
@@ -250,7 +250,7 @@ Explored, per brainstorming skill: README, `price_forecast/` (harness, predictor
 
 ## Source list
 
-- Repo: `README.md`; `price_forecast/harness.py`, `predictors.py`, `chronos.py`, `series.py`, `bakeoff.py`, `bakeoff_results.md`, `__init__.py`; `pyproject.toml`; `tests/test_harness.py`, `test_arima_garch.py`, `test_chronos.py`, `test_loader.py`; git log; commits `be22a81`, `8d6a1af`, `13b955a`, `6e3706c`.
+- Repo: `README.md`; `price_forecast/forecast/harness.py`, `price_forecast/forecast/predictors.py`, `price_forecast/forecast/chronos.py`, `price_forecast/data/series.py`, `price_forecast/forecast/bakeoff.py`, `results/bakeoff_results.md`, `price_forecast/__init__.py`; `pyproject.toml`; `tests/forecast/test_harness.py`, `tests/forecast/test_arima_garch.py`, `tests/forecast/test_chronos.py`, `tests/data/test_loader.py`; git log; commits `be22a81`, `8d6a1af`, `13b955a`, `6e3706c`.
 - GitHub: [PR #1](https://github.com/FelixClements/prism/pull/1), [PR #2](https://github.com/FelixClements/prism/pull/2).
 - Coinbase candles: [Get product candles](https://docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproductcandles); live download 2026-09-17 via `load_daily_closes(source="coinbase")`.
 - Coinbase orders: [Create a new order (stops)](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/orders/create-new-order); [Advanced API Order Management](https://docs.cdp.coinbase.com/coinbase-business/advanced-trade-apis/guides/orders); [Global Derivatives Overview](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/guides/derivatives/overview); [Technical Migration Guide](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/guides/derivatives/technical).

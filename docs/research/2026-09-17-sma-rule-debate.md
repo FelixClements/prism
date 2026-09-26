@@ -17,9 +17,9 @@ Freeze **buy 8 / sell 16** as Prism v1. It is the only candidate that (1) matche
 
 All three are weekly, 100% BTC or 100% cash, no shorts. Signal at this Sunday’s close fills at next week’s close. Cash earns 0. Each flip costs 10 bps of wealth. Same Coinbase BTC-USD weekly closes (UTC Monday–Sunday) as the rest of `price_forecast/`.
 
-**Symmetric SMA-8:** in BTC iff this week’s close is strictly above the 8-week SMA (SMA includes this close). One number. Can flip every week. Defined in `sma_signal(..., lookback=8)` in `price_forecast/weekly_regime.py`.
+**Symmetric SMA-8:** in BTC iff this week’s close is strictly above the 8-week SMA (SMA includes this close). One number. Can flip every week. Defined in `sma_signal(..., lookback=8)` in `price_forecast/strategies/signals.py`.
 
-**Asymmetric buy N / sell M:** while in BTC, sell to cash iff close is strictly below the *longer* SMA; while in cash, buy iff close is strictly above the *shorter* SMA. Hysteresis: the exit is slower than the entry. Defined in `asymmetric_sma_signal` in the same file. The frozen 24-cell grid was `buy ∈ {4,6,8,10,12}` × `sell ∈ {12,16,20,26,40}` with sell > buy (`price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k.py`).
+**Asymmetric buy N / sell M:** while in BTC, sell to cash iff close is strictly below the *longer* SMA; while in cash, buy iff close is strictly above the *shorter* SMA. Hysteresis: the exit is slower than the entry. Defined in `asymmetric_sma_signal` in the same file. The frozen 24-cell grid was `buy ∈ {4,6,8,10,12}` × `sell ∈ {12,16,20,26,40}` with sell > buy (`archive/frozen_t1_bakeoff/sma_asymmetric_10k.py`).
 
 **Mid pair used here:** **buy8/sell16**. It is on the “at least as shallow as SMA-8 on both crash windows” list in `sma_asymmetric_10k_results.md`. That is why it is the mid pair, not buy6/sell16 (better-looking cell, not pre-named) and not buy8/sell26 (fails the 80% 2024 bar).
 
@@ -34,7 +34,7 @@ From `docs/research/2026-09-17-btc-protection-after-point-forecast.md` and the l
 - Hold BTC for long-horizon wealth, with some protection against a ~50% drop.
 - The cited drop is the **Oct 2025 → Jun 2026 grind**, close-to-close **−53.08%** over 267 days on this Coinbase series — not a 10-day crash, and not calendar-2026’s −39.64% (`docs/research/2026-09-17-btc-protection-after-point-forecast.md` §2). 2022 is the other named stress: calendar 2022 close-to-close **−66.98%** in that note; the weekly $10k windows measure **−68.0%** buy-and-hold max DD.
 - Product action: weekly trend, mostly cash when out, full BTC when back in.
-- Frozen weekly bakeoff labels (`price_forecast/archive/frozen_t1_bakeoff/weekly_bakeoff_results.md`): **C** = max DD at least 10pp better than buy-and-hold *and* terminal wealth ≥ 90% of buy-and-hold; **A** = the drawdown cut alone; **product C** also needs 2024–latest wealth within 10% of buy-and-hold. C on both crashes: several rules including SMA-8. Product C: **none**. Then the user said **~80% of buy-and-hold is good enough**; SMA-8 was **81.2%** of buy-and-hold on 2024–latest (`sma8_10k_results.md` and `sma_asymmetric_10k_results.md`, same window).
+- Frozen weekly bakeoff labels (`archive/frozen_t1_bakeoff/weekly_bakeoff_results.md`): **C** = max DD at least 10pp better than buy-and-hold *and* terminal wealth ≥ 90% of buy-and-hold; **A** = the drawdown cut alone; **product C** also needs 2024–latest wealth within 10% of buy-and-hold. C on both crashes: several rules including SMA-8. Product C: **none**. Then the user said **~80% of buy-and-hold is good enough**; SMA-8 was **81.2%** of buy-and-hold on 2024–latest (`sma8_10k_results.md` and `sma_asymmetric_10k_results.md`, same window).
 - Live challenge: why not **buy6/sell40**, which prints more full-sample dollars and **−55.4%** all-time max DD vs SMA-8’s **−63.2%** on the 40-week-warmup sample.
 
 ---
@@ -66,7 +66,7 @@ Weekly bakeoff SMA-8 crash DDs (−45.1% in 2022, −31.3% in 2025–26) inherit
 | | buy6/sell40 | $17,872.42 | −42.2% | 98.4% | +$3,121.12 | −5.7pp |
 | | **buy8/sell16** | $18,945.27 | −30.9% | **104.3%** | +$4,193.97 | +5.7pp |
 
-Sources: `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` (all four windows for SMA-8, buy6/sell40, buy8/sell16, buy-and-hold); `price_forecast/archive/frozen_t1_bakeoff/sma8_10k_results.md` (8-week-warmup full sample, and the three calendar windows which match the asymmetric SMA-8 rows).
+Sources: `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` (all four windows for SMA-8, buy6/sell40, buy8/sell16, buy-and-hold); `archive/frozen_t1_bakeoff/sma8_10k_results.md` (8-week-warmup full sample, and the three calendar windows which match the asymmetric SMA-8 rows).
 
 buy4/sell40 (rejected max cell), same file, for the record only: full-sample $235,261.44 / −56.6%; 2025–26 −39.4% (worse than SMA-8); 2024–latest $17,909.89 / 98.6% of B&H / −40.5% DD.
 
@@ -136,22 +136,24 @@ Two rules are close on the dump the user named: SMA-8 and buy8/sell16. Still pic
 ## Sources
 
 - `docs/research/2026-09-17-btc-protection-after-point-forecast.md` — user goal; Coinbase −53.08% path 2025-10-06→2026-06-30; 2022 calendar −66.98%; C vs A language in the later bakeoff.
-- `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` — 40-week-warmup full sample and the three calendar windows; 24-cell grid; “kept both crashes vs SMA-8” list; buy4/sell40 as max cell; sell=40 pattern on 2025–26. (OLD. Superseded by SMAGateV1.)
-- `price_forecast/archive/frozen_t1_bakeoff/sma8_10k_results.md` — 8-week-warmup full sample; SMA-8 vs hold on 2022 / 2025–26 / 2024–latest (matches the asymmetric SMA-8 calendar rows). (OLD.)
-- `price_forecast/archive/frozen_t1_bakeoff/weekly_bakeoff_results.md` — C / A / product C definitions and SMA-8’s C-on-crashes / fail-product-C result (inherited-fill wealth, not the $10k table). (OLD.)
-- `price_forecast/weekly_regime.py` — `weekly_closes` (live, used by SMAGateV1); `sma_signal`, `asymmetric_sma_signal`, 10 bp cost (archived t+1 engine).
-- `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k.py` — frozen `BUY_WEEKS` / `SELL_WEEKS`; 40-week warmup; pre-declared callout vs SMA-8.
-- `price_forecast/archive/frozen_t1_bakeoff/sma8_10k.py` — frozen SMA-8 dollar windows.
-- `price_forecast/archive/frozen_t1_bakeoff/weekly_bakeoff.py` — `WINDOWS`, `CRASH_WINDOWS`, `LONG_RUN_WINDOW`, `WEALTH_FLOOR = 0.9`, `DD_IMPROVEMENT = 0.10`.
+- `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` — 40-week-warmup full sample and the three calendar windows; 24-cell grid; “kept both crashes vs SMA-8” list; buy4/sell40 as max cell; sell=40 pattern on 2025–26. (OLD. Superseded by SMAGateV1.)
+- `archive/frozen_t1_bakeoff/sma8_10k_results.md` — 8-week-warmup full sample; SMA-8 vs hold on 2022 / 2025–26 / 2024–latest (matches the asymmetric SMA-8 calendar rows). (OLD.)
+- `archive/frozen_t1_bakeoff/weekly_bakeoff_results.md` — C / A / product C definitions and SMA-8’s C-on-crashes / fail-product-C result (inherited-fill wealth, not the $10k table). (OLD.)
+- `price_forecast/data/weekly.py` — `weekly_closes` (live, used by SMAGateV1).
+- `price_forecast/strategies/signals.py` — `sma_signal`, `asymmetric_sma_signal`.
+- `price_forecast/backtest/t1.py` — 10 bp t+1 engine (archived bakeoff).
+- `archive/frozen_t1_bakeoff/sma_asymmetric_10k.py` — frozen `BUY_WEEKS` / `SELL_WEEKS`; 40-week warmup; pre-declared callout vs SMA-8.
+- `archive/frozen_t1_bakeoff/sma8_10k.py` — frozen SMA-8 dollar windows.
+- `archive/frozen_t1_bakeoff/weekly_bakeoff.py` — `WINDOWS`, `CRASH_WINDOWS`, `LONG_RUN_WINDOW`, `WEALTH_FLOOR = 0.9`, `DD_IMPROVEMENT = 0.10`.
 
 ---
 
 ## Addendum 2026-09-18 — SMAGateV1 (user-named best-so-far)
 
-The user named the locked best-so-far **SMAGateV1** (2026-09-18). Runner stays `python -m price_forecast.sma8_16_kpis` (`price_forecast/sma8_16_kpis.py`); the Python file is not renamed. Meaning: weekly BTC, SMA-8 in / SMA-16 out (the "gate"), same-bar Sunday close fill, 0.15% per fill, start cash. **2026-09-20:** on the line is HOLD — buy only if close is **strictly above** SMA-8, sell only if close is **strictly below** SMA-16 (`>` / `<`). V1 is this freeze, not a new rule.
+The user named the locked best-so-far **SMAGateV1** (2026-09-18). Runner is `python -m price_forecast.strategies.smagate_v1`. Meaning: weekly BTC, SMA-8 in / SMA-16 out (the "gate"), same-bar Sunday close fill, 0.15% per fill, start cash. **2026-09-20:** on the line is HOLD — buy only if close is **strictly above** SMA-8, sell only if close is **strictly below** SMA-16 (`>` / `<`). V1 is this freeze, not a new rule.
 
 Economically the product rule is still buy-8 / sell-16. The original freeze in this note used the weekly bakeoff execution: signal at week t, fill at week t+1, 10 bps, start in BTC, strict inequalities. SMAGateV1 is what the user prefers **if they trade at the weekly close** (contemporaneous fill, not next-week fill). Not investment advice. Still takes ~30-40% crash chapters.
 
-**SMAGateV1 is the only live freeze.** The t+1 bakeoff is archived at `price_forecast/archive/frozen_t1_bakeoff/` (2026-09-20). Do not use it for new work. t+1 numbers in this note still stand for that old execution assumption. Do not mix the two scoreboards. The KPI runner also does not report 2022 and Oct 2025–Jun 2026 max DD as separate frozen windows; that dump-goal check still lives on the archived t+1 $10k tables.
+**SMAGateV1 is the only live freeze.** The t+1 bakeoff is archived at `archive/frozen_t1_bakeoff/` (2026-09-20). Do not use it for new work. t+1 numbers in this note still stand for that old execution assumption. Do not mix the two scoreboards. The KPI runner also does not report 2022 and Oct 2025–Jun 2026 max DD as separate frozen windows; that dump-goal check still lives on the archived t+1 $10k tables.
 
-Source: `price_forecast/sma8_16_kpis_results.md`. Archive: `price_forecast/archive/frozen_t1_bakeoff/README.md`.
+Source: `results/sma8_16_kpis_results.md`. Archive: `archive/frozen_t1_bakeoff/README.md`.

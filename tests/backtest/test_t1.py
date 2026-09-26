@@ -1,0 +1,287 @@
+"""Archived t+1 / 10 bp engine: delayed fills, F&G overlay, dollar backtest."""
+
+from __future__ import annotations
+
+from datetime import date, timedelta
+from typing import Sequence
+
+import pytest
+
+from price_forecast.backtest.t1 import (
+    COST_BPS,
+    SMA8_LOOKBACK,
+    BacktestResult,
+    align_fng_to_weeks,
+    apply_fng_overlay,
+    backtest,
+    dollar_backtest,
+    fng_only_signal,
+    pass_a,
+    pass_c,
+    sma8_first_fill_date,
+    sma_first_fill_date,
+)
+from price_forecast.strategies.signals import sma_signal
+
+
+def _weeks_from_closes(closes: Sequence[float], *, start: date = date(2022, 1, 9)) -> list[tuple[date, float]]:
+    return [(start + timedelta(weeks=i), close) for i, close in enumerate(closes)]
+
+
+def test_signal_at_week_t_fills_at_next_week_close():
+    # Inherited BTC. Cash signal at the 100 bar must not sell before the 200 bar.
+    weeks = _weeks_from_closes([100.0, 200.0, 200.0])
+    signals = [0, 0, 0]
+
+    result = backtest(weeks, signals)
+
+    assert result.terminal_wealth == pytest.approx(2.0 * (1 - COST_BPS / 10_000))
+    assert result.round_trips == 1
+    assert result.time_in_btc == pytest.approx(0.5)
+
+
+def test_same_bar_fill_would_be_optimistic_and_is_not_used():
+    weeks = _weeks_from_closes([100.0, 200.0, 200.0])
+    signals = [0, 0, 0]
+
+    result = backtest(weeks, signals)
+
+    assert result.terminal_wealth > 1.5
+    assert result.terminal_wealth != pytest.approx(1.0 * (1 - COST_BPS / 10_000))
+
+
+def test_each_flip_costs_ten_bps_of_wealth():
+    weeks = _weeks_from_closes([100.0, 100.0, 100.0, 100.0])
+    # Fill at bar 1: cash; fill at bar 2: BTC. Two flips, flat price.
+    signals = [0, 1, 1, 1]
+
+    result = backtest(weeks, signals)
+
+    assert result.terminal_wealth == pytest.approx((1 - COST_BPS / 10_000) ** 2)
+    assert result.round_trips == 1
+
+
+def test_cash_weeks_earn_zero():
+    weeks = _weeks_from_closes([100.0, 200.0, 50.0])
+    signals = [0, 0, 0]
+
+    result = backtest(weeks, signals)
+
+    # Hold BTC through 100→200, sell at 200, miss 200→50.
+    assert result.terminal_wealth == pytest.approx(2.0 * (1 - COST_BPS / 10_000))
+
+
+def test_undefined_signals_keep_inherited_btc():
+    weeks = _weeks_from_closes([100.0, 110.0, 121.0])
+    signals = [None, None, None]
+
+    result = backtest(weeks, signals)
+
+    assert result.terminal_wealth == pytest.approx(1.21)
+    assert result.round_trips == 0
+    assert result.time_in_btc == pytest.approx(1.0)
+
+
+def test_fng_overlay_forces_cash_when_index_above_75():
+    weeks = _weeks_from_closes([100.0, 100.0, 100.0])
+    base = [1, 1, 1]
+    fng = [80, 80, 80]
+
+    overlaid = apply_fng_overlay(base, fng)
+
+    assert overlaid == [0, 0, 0]
+
+
+def test_fng_overlay_does_not_force_a_buy():
+    weeks = _weeks_from_closes([100.0, 100.0])
+    base = [0, 0]
+    fng = [10, 10]
+
+    overlaid = apply_fng_overlay(base, fng)
+
+    assert overlaid == [0, 0]
+
+
+def test_fng_overlay_skips_weeks_with_missing_index():
+    base = [1, 1, 1]
+    fng = [None, 80, None]
+
+    overlaid = apply_fng_overlay(base, fng)
+
+    assert overlaid == [1, 0, 1]
+
+
+def test_fng_only_buys_below_25_sells_above_75_else_holds():
+    fng = [50, 80, 80, 10, 50]
+
+    signal = fng_only_signal(fng)
+
+    # start BTC; 50 hold; 80 cash; 80 cash; 10 BTC; 50 hold BTC
+    assert signal == [1, 0, 0, 1, 1]
+
+
+def test_fng_only_does_not_invent_missing_values():
+    fng = [None, None, 80]
+
+    signal = fng_only_signal(fng)
+
+    assert signal == [1, 1, 0]
+
+
+def test_fng_at_week_close_uses_last_index_on_or_before_sunday():
+    daily = {
+        date(2022, 1, 8): 40,  # Saturday
+        date(2022, 1, 10): 90,  # Monday after the week
+    }
+    weeks = _weeks_from_closes([100.0], start=date(2022, 1, 9))
+
+    aligned = align_fng_to_weeks(weeks, daily)
+
+    assert aligned == [40]
+
+
+def test_fng_alignment_is_none_when_history_has_not_started():
+    daily = {date(2022, 2, 1): 50}
+    weeks = _weeks_from_closes([100.0], start=date(2022, 1, 9))
+
+    aligned = align_fng_to_weeks(weeks, daily)
+
+    assert aligned == [None]
+
+
+def test_max_drawdown_is_peak_to_trough_on_wealth():
+    weeks = _weeks_from_closes([100.0, 200.0, 100.0])
+    signals = [1, 1, 1]
+
+    result = backtest(weeks, signals)
+
+    assert result.terminal_wealth == pytest.approx(1.0)
+    assert result.max_drawdown == pytest.approx(-0.5)
+
+
+def test_pass_a_needs_ten_percentage_points_better_drawdown():
+    bh = BacktestResult(1.0, -0.50, 1.0, 0, date(2022, 1, 9), date(2022, 1, 23), 2)
+    barely = BacktestResult(1.0, -0.49, 0.5, 1, date(2022, 1, 9), date(2022, 1, 23), 2)
+    enough = BacktestResult(0.5, -0.40, 0.5, 1, date(2022, 1, 9), date(2022, 1, 23), 2)
+
+    assert pass_a(barely, bh) is False
+    assert pass_a(enough, bh) is True
+
+
+def test_pass_c_needs_a_and_wealth_within_ten_percent_of_buy_hold():
+    bh = BacktestResult(2.0, -0.50, 1.0, 0, date(2022, 1, 9), date(2022, 1, 23), 2)
+    cheap_crash = BacktestResult(1.79, -0.40, 0.5, 1, date(2022, 1, 9), date(2022, 1, 23), 2)
+    close_enough = BacktestResult(1.80, -0.40, 0.5, 1, date(2022, 1, 9), date(2022, 1, 23), 2)
+
+    assert pass_c(cheap_crash, bh) is False
+    assert pass_c(close_enough, bh) is True
+    assert pass_a(cheap_crash, bh) is True
+
+
+def test_window_starts_at_last_weekly_close_on_or_before_start_date():
+    weeks = _weeks_from_closes([100.0, 110.0, 121.0], start=date(2021, 12, 26))
+    signals = [1, 1, 1]
+
+    result = backtest(weeks, signals, start=date(2022, 1, 1), end=date(2022, 1, 9))
+
+    assert result.start == date(2021, 12, 26)
+    assert result.end == date(2022, 1, 9)
+    assert result.terminal_wealth == pytest.approx(1.21)
+
+
+def test_window_inherits_already_filled_position_without_rechanging_cost():
+    # Out before the window, stay out. $1 at window start is already cash.
+    weeks = _weeks_from_closes([100.0] * 4)
+    signals = [0, 0, 0, 0]
+
+    result = backtest(
+        weeks,
+        signals,
+        start=weeks[2][0],
+        end=weeks[3][0],
+    )
+
+    assert result.round_trips == 0
+    assert result.terminal_wealth == pytest.approx(1.0)
+    assert result.time_in_btc == pytest.approx(0.0)
+
+
+def test_dollar_backtest_converts_start_cash_to_btc_with_no_opening_fee():
+    weeks = _weeks_from_closes([50_000.0, 100_000.0])
+    signals = [1, 1]
+
+    result = dollar_backtest(weeks, signals, starting_dollars=10_000.0)
+
+    assert result.start_dollars == pytest.approx(10_000.0)
+    assert result.start_btc == pytest.approx(10_000.0 / 50_000.0)
+    assert result.end_dollars == pytest.approx(20_000.0)
+    assert result.end_btc == pytest.approx(0.2)
+    assert result.end_in_btc is True
+    assert result.fees_paid == pytest.approx(0.0)
+    assert result.flips == 0
+
+
+def test_dollar_backtest_fresh_start_buys_btc_even_if_prior_signal_was_cash():
+    weeks = _weeks_from_closes([100.0, 100.0, 200.0, 100.0])
+    signals = [0, 0, 0, 0]
+    inherited = backtest(weeks, signals, start=weeks[2][0], end=weeks[3][0])
+    fresh = dollar_backtest(
+        weeks,
+        signals,
+        start=weeks[2][0],
+        end=weeks[3][0],
+        starting_dollars=10_000.0,
+    )
+
+    assert inherited.terminal_wealth == pytest.approx(1.0)
+    assert inherited.time_in_btc == pytest.approx(0.0)
+    assert fresh.start_btc == pytest.approx(10_000.0 / 200.0)
+    assert fresh.end_dollars == pytest.approx(5_000.0)
+    assert fresh.end_in_btc is True
+    assert fresh.time_in_btc == pytest.approx(1.0)
+
+
+def test_dollar_backtest_charges_ten_bps_on_flips_not_the_opening_buy():
+    weeks = _weeks_from_closes([100.0, 100.0, 100.0])
+    signals = [0, 0, 0]
+
+    result = dollar_backtest(weeks, signals, starting_dollars=10_000.0)
+
+    assert result.fees_paid == pytest.approx(10.0)
+    assert result.end_dollars == pytest.approx(9_990.0)
+    assert result.flips == 1
+    assert result.round_trips == 1
+    assert result.end_in_btc is False
+    assert result.end_cash == pytest.approx(9_990.0)
+    assert result.last_flip == weeks[1][0]
+
+
+def test_dollar_backtest_scales_inherited_unit_wealth_when_asked():
+    weeks = _weeks_from_closes([100.0, 200.0, 100.0])
+    signals = [1, 1, 1]
+    unit = backtest(weeks, signals)
+    dollars = dollar_backtest(
+        weeks,
+        signals,
+        starting_dollars=10_000.0,
+        inherit_position=True,
+    )
+
+    assert dollars.end_dollars == pytest.approx(10_000.0 * unit.terminal_wealth)
+    assert dollars.max_drawdown == pytest.approx(unit.max_drawdown)
+    assert dollars.max_drawdown_dollars == pytest.approx(10_000.0)
+
+
+def test_sma8_first_fill_bar_is_the_week_after_sma8_is_defined():
+    weeks = _weeks_from_closes([100.0] * 12)
+
+    assert SMA8_LOOKBACK == 8
+    assert sma8_first_fill_date(weeks) == weeks[8][0]
+    assert sma_signal(weeks, lookback=8)[7] is not None
+    assert sma_signal(weeks, lookback=8)[6] is None
+
+
+def test_sma_first_fill_bar_is_the_week_after_lookback_is_defined():
+    weeks = _weeks_from_closes([100.0] * 45)
+
+    assert sma_first_fill_date(weeks, lookback=40) == weeks[40][0]

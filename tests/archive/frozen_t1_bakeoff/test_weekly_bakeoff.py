@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import (
+from archive.frozen_t1_bakeoff.weekly_bakeoff import (
     CRASH_WINDOWS,
     LONG_RUN_WINDOW,
     STRATEGIES,

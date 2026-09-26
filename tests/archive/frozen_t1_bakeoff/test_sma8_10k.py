@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from price_forecast.archive.frozen_t1_bakeoff.sma8_10k import (
+from archive.frozen_t1_bakeoff.sma8_10k import (
     STARTING_DOLLARS,
     dollar_window_specs,
 )
-from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
+from archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
 from price_forecast.backtest.t1 import SMA8_LOOKBACK
 
 

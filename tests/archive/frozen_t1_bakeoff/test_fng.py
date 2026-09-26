@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from price_forecast.archive.frozen_t1_bakeoff.fng import FNG_SOURCE, bars_from_fng_payload
+from archive.frozen_t1_bakeoff.fng import FNG_SOURCE, bars_from_fng_payload
 
 
 def test_fng_payload_uses_utc_unix_dates_and_integer_values():

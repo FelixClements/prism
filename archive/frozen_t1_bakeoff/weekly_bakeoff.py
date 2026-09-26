@@ -4,7 +4,7 @@ Do not use for new work. Live freeze:
     .venv/bin/python -m price_forecast.sma8_16_kpis
 
 Historical re-run:
-    .venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff
+    .venv/bin/python -m archive.frozen_t1_bakeoff.weekly_bakeoff
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from price_forecast.archive.frozen_t1_bakeoff.fng import FNG_API_URL, FNG_SOURCE, load_fng
+from archive.frozen_t1_bakeoff.fng import FNG_API_URL, FNG_SOURCE, load_fng
 from price_forecast.data.series import (
     BTC_CLOSE_PRODUCT,
     BTC_CLOSE_SOURCE,
@@ -317,7 +317,7 @@ def format_report(
     lines.append("")
     lines.append(
         "OLD. Superseded by SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). "
-        "Historical command: `.venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff`"
+        "Historical command: `.venv/bin/python -m archive.frozen_t1_bakeoff.weekly_bakeoff`"
     )
     lines.append("")
     return "\n".join(lines)

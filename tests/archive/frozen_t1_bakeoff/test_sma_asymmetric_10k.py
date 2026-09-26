@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from price_forecast.archive.frozen_t1_bakeoff.sma8_10k import STARTING_DOLLARS
-from price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k import (
+from archive.frozen_t1_bakeoff.sma8_10k import STARTING_DOLLARS
+from archive.frozen_t1_bakeoff.sma_asymmetric_10k import (
     BUY_WEEKS,
     LONGEST_SMA,
     SELL_WEEKS,
@@ -15,7 +15,7 @@ from price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k import (
     frozen_combos,
     score_grid,
 )
-from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
+from archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
 from price_forecast.backtest.t1 import DD_IMPROVEMENT, sma_first_fill_date
 
 

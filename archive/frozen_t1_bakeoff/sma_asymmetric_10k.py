@@ -4,7 +4,7 @@ Do not use for new work. Live freeze:
     .venv/bin/python -m price_forecast.sma8_16_kpis
 
 Historical re-run:
-    .venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k
+    .venv/bin/python -m archive.frozen_t1_bakeoff.sma_asymmetric_10k
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ from price_forecast.data.series import (
     BTC_CLOSE_TIMEZONE,
     load_daily_closes,
 )
-from price_forecast.archive.frozen_t1_bakeoff.sma8_10k import STARTING_DOLLARS
-from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import (
+from archive.frozen_t1_bakeoff.sma8_10k import STARTING_DOLLARS
+from archive.frozen_t1_bakeoff.weekly_bakeoff import (
     CRASH_WINDOWS,
     LONG_RUN_WINDOW,
     WINDOWS,
@@ -239,11 +239,11 @@ def format_report(
         "## How to re-run",
         "",
         "```",
-        ".venv/bin/python -m price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k",
+        ".venv/bin/python -m archive.frozen_t1_bakeoff.sma_asymmetric_10k",
         "```",
         "",
         "OLD. Superseded by SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). "
-        "Writes `price_forecast/archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md`. "
+        "Writes `archive.frozen_t1_bakeoff/sma_asymmetric_10k_results.md`. "
         "State machine is `asymmetric_sma_signal` in `price_forecast/weekly_regime.py`. "
         "Dollar fills reuse `dollar_backtest`.",
         "",

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import math
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 
+from price_forecast.data.candles import Candle, write_candles
 from price_forecast.remix.remix import (
     MEAN_BLOCK_BARS,
     main,
@@ -113,9 +115,21 @@ def test_sanity_compares_real_remixed_and_iid_control():
     assert facts["hodl_max_dd"] <= 0.0
 
 
-def test_main_prints_sanity_without_network(capsys):
+def test_main_prints_sanity_without_network(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
     series = _seasonal_daily(n=250)
-    main(["--n-paths", "2", "--seed", "0", "--mean-block-bars", "40"], series=series)
+    src = tmp_path / "src.csv"
+    write_candles(
+        src,
+        tuple(
+            Candle(day, close, close, close, close, None)
+            for day in series.dates()
+            for close in (series.close_at(day),)
+        ),
+    )
+    monkeypatch.setattr("price_forecast.remix.remix.REMIX_DIR", tmp_path / "remix")
+    main(["--csv", str(src), "--n-paths", "2", "--seed", "0", "--mean-block-bars", "40"])
     out = capsys.readouterr().out
     assert "hodl_max_dd" in out
     assert "acf_weekly_8" in out

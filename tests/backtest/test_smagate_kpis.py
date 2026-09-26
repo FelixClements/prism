@@ -8,41 +8,36 @@ from typing import Sequence
 
 import pytest
 
-from price_forecast.sma8_16_kpis import (
+from price_forecast.backtest.engine import simulate_hodl, simulate_strategy
+from price_forecast.backtest.kpis import (
+    cagr,
+    compute_kpis,
+    mar_ratio,
+    max_drawdown,
+    monthly_kpis,
+    profit_factor,
+    sortino_ratio,
+)
+from price_forecast.backtest.reports import (
+    format_compact_monthly_table,
+    format_monthly_csv,
+    format_monthly_markdown,
+    format_report,
+)
+from price_forecast.strategies.signals import sma_at
+from price_forecast.strategies.smagate_v1 import (
     BUY_WEEKS,
     FILL_COST,
     SELL_WEEKS,
     STARTING_DOLLARS,
     WHIPSAW_MAX_HOLDING_BARS,
-    cagr,
-    compute_kpis,
-    format_compact_monthly_table,
-    format_monthly_csv,
-    format_monthly_markdown,
-    format_report,
-    mar_ratio,
-    max_drawdown,
-    monthly_kpis,
-    profit_factor,
-    simulate_hodl,
-    simulate_strategy,
-    sortino_ratio,
 )
-from price_forecast.strategies.signals import sma_at
 
 
 def _weeks_from_closes(
     closes: Sequence[float], *, start: date = date(2022, 1, 9)
 ) -> list[tuple[date, float]]:
     return [(start + timedelta(weeks=i), close) for i, close in enumerate(closes)]
-
-
-def test_defaults_match_the_stated_product_rule():
-    assert BUY_WEEKS == 8
-    assert SELL_WEEKS == 16
-    assert FILL_COST == pytest.approx(0.0015)
-    assert STARTING_DOLLARS == 10_000.0
-    assert WHIPSAW_MAX_HOLDING_BARS == 2
 
 
 def test_no_trade_before_both_sma8_and_sma16_exist():

@@ -15,7 +15,7 @@ from price_forecast.remix import (
     stylized_facts,
 )
 from price_forecast.data.series import PriceSeries
-from price_forecast.sma8_16_kpis import simulate_strategy
+from price_forecast.backtest.engine import simulate_strategy
 from price_forecast.data.weekly import weekly_closes
 
 

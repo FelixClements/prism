@@ -26,15 +26,14 @@ from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import (
     WINDOWS,
 )
 from price_forecast.data.weekly import weekly_closes
+from price_forecast.strategies.signals import asymmetric_sma_signal, sma_signal
 from price_forecast.weekly_regime import (
     COST_BPS,
     DD_IMPROVEMENT,
     SMA8_LOOKBACK,
     DollarBacktestResult,
-    asymmetric_sma_signal,
     dollar_backtest,
     sma_first_fill_date,
-    sma_signal,
 )
 
 BUY_WEEKS = (4, 6, 8, 10, 12)

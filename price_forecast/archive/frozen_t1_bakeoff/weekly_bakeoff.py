@@ -21,6 +21,11 @@ from price_forecast.data.series import (
     load_daily_closes,
 )
 from price_forecast.data.weekly import weekly_closes
+from price_forecast.strategies.signals import (
+    donchian_signal,
+    dual_sma_signal,
+    sma_signal,
+)
 from price_forecast.weekly_regime import (
     COST_BPS,
     FNG_FEAR_ENTRY,
@@ -30,12 +35,9 @@ from price_forecast.weekly_regime import (
     align_fng_to_weeks,
     apply_fng_overlay,
     backtest,
-    donchian_signal,
-    dual_sma_signal,
     fng_only_signal,
     pass_a,
     pass_c,
-    sma_signal,
 )
 
 STRATEGIES = [

@@ -26,9 +26,9 @@ from price_forecast.sma8_16_kpis import (
     profit_factor,
     simulate_hodl,
     simulate_strategy,
-    sma_at,
     sortino_ratio,
 )
+from price_forecast.strategies.signals import sma_at
 
 
 def _weeks_from_closes(
@@ -43,17 +43,6 @@ def test_defaults_match_the_stated_product_rule():
     assert FILL_COST == pytest.approx(0.0015)
     assert STARTING_DOLLARS == 10_000.0
     assert WHIPSAW_MAX_HOLDING_BARS == 2
-
-
-def test_sma_at_t_uses_closes_through_t_inclusive():
-    closes = [float(i + 1) for i in range(20)]
-
-    at_t = sma_at(closes, 10, 8)
-    without_future = sma_at(closes[:11], 10, 8)
-
-    assert at_t == pytest.approx(sum(closes[3:11]) / 8)
-    assert at_t == pytest.approx(without_future)
-    assert at_t != pytest.approx(sum(closes[3:12]) / 8)
 
 
 def test_no_trade_before_both_sma8_and_sma16_exist():

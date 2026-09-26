@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import os
 import sys
 from dataclasses import dataclass
@@ -147,7 +148,9 @@ def _validate(candles: Sequence[Candle]) -> tuple[Candle, ...]:
             raise ValueError(f"high below open or close on {candle.day}")
         if candle.low > candle.open or candle.low > candle.close:
             raise ValueError(f"low above open or close on {candle.day}")
-        if candle.volume is not None and candle.volume < 0:
+        if candle.volume is not None and (
+            not math.isfinite(candle.volume) or not (candle.volume >= 0)
+        ):
             raise ValueError(f"volume must be blank or >= 0 on {candle.day}")
     return rows
 
@@ -184,9 +187,12 @@ def _volume(raw: str | None) -> float | None:
     if raw is None or raw.strip() == "":
         return None
     try:
-        return float(raw)
+        value = float(raw)
     except ValueError as exc:
         raise ValueError("volume is not a number") from exc
+    if not math.isfinite(value) or not (value >= 0):
+        raise ValueError("volume must be blank or >= 0")
+    return value
 
 
 def _write_csv(path: Path, candles: Sequence[Candle]) -> None:

@@ -74,6 +74,19 @@ def test_rejects_bad_candles(tmp_path: Path):
         assert not path.exists()
 
 
+def test_rejects_nan_volume_on_read_and_write(tmp_path: Path):
+    path = tmp_path / "nan.csv"
+    path.write_text(
+        "time,low,high,open,close,volume\n2020-01-01,9,11,10,10.5,nan\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError):
+        read_candles(path)
+    nan_volume = (Candle(date(2020, 1, 1), 9, 11, 10, 10.5, float("nan")),)
+    with pytest.raises(ValueError):
+        write_candles(path, nan_volume)
+
+
 def test_rejects_bad_header_and_text(tmp_path: Path):
     path = tmp_path / "bad.csv"
     path.write_text("day,close\n2020-01-01,1\n", encoding="utf-8")

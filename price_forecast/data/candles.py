@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import math
 import os
@@ -9,9 +10,9 @@ import sys
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Sequence
+from typing import Callable, Sequence
 
-from price_forecast.data.series import PriceSeries
+from price_forecast.data.series import PriceSeries, fetch_coinbase_ohlc
 
 HEADER = ("time", "low", "high", "open", "close", "volume")
 BTC_USD_DAILY_CSV = Path(__file__).resolve().parents[2] / "data" / "btc-usd-daily.csv"
@@ -127,6 +128,44 @@ def parse_coinbase_ohlc(rows: Sequence[Sequence[float]]) -> tuple[Candle, ...]:
     return _validate(tuple(by_day[day] for day in sorted(by_day)))
 
 
+def update_coinbase_file(
+    path: Path,
+    *,
+    today: date,
+    fetch: Callable[[date, date], Sequence[Sequence[float]]],
+) -> None:
+    dest = Path(path)
+    if dest.is_file():
+        existing = read_candles(dest)
+        start = existing[-1].day
+    else:
+        existing = ()
+        start = COINBASE_START
+    fetched = parse_coinbase_ohlc(fetch(start, today))
+    if existing:
+        last = existing[-1].day
+        kept = tuple(candle for candle in existing if candle.day < last)
+        fresh = tuple(candle for candle in fetched if candle.day >= last)
+        rows = kept + fresh
+    else:
+        rows = fetched
+    write_candles(dest, rows)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(
+        description="Download or extend data/btc-usd-daily.csv from Coinbase and write its PNG."
+    )
+    parser.add_argument(
+        "--today",
+        type=date.fromisoformat,
+        default=datetime.now(timezone.utc).date(),
+        help="UTC end date (default: today).",
+    )
+    args = parser.parse_args(argv)
+    update_coinbase_file(BTC_USD_DAILY_CSV, today=args.today, fetch=fetch_coinbase_ohlc)
+
+
 def _validate(candles: Sequence[Candle]) -> tuple[Candle, ...]:
     rows = tuple(candles)
     if not rows:
@@ -211,3 +250,7 @@ def _write_csv(path: Path, candles: Sequence[Candle]) -> None:
                     volume,
                 ]
             )
+
+
+if __name__ == "__main__":
+    main()

@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 
+from price_forecast.data import series as series_mod
 from price_forecast.data.candles import (
+    COINBASE_START,
     Candle,
     candle_face,
     draw_candle_chart,
+    parse_coinbase_ohlc,
     read_candles,
     require_closes,
+    update_coinbase_file,
     write_candles,
 )
 
@@ -136,3 +140,109 @@ def test_gitignore_lists_generated_candle_files():
     lines = (root / ".gitignore").read_text(encoding="utf-8").splitlines()
     for line in ("data/btc-usd-daily.csv", "data/btc-usd-daily.png", "data/remix/"):
         assert line in lines
+
+
+def _raw(day: date, close: float) -> list[float]:
+    ts = int(datetime(day.year, day.month, day.day, tzinfo=timezone.utc).timestamp())
+    return [float(ts), close - 2, close + 2, close - 1, close, 1.0]
+
+
+def test_parse_coinbase_keeps_ohlc_order():
+    day = date(2020, 1, 2)
+    rows = parse_coinbase_ohlc([_raw(day, 42)])
+    assert rows[0].low == pytest.approx(40)
+    assert rows[0].high == pytest.approx(44)
+    assert rows[0].open == pytest.approx(41)
+    assert rows[0].close == pytest.approx(42)
+    assert rows[0].volume == pytest.approx(1)
+
+
+def test_update_replaces_last_day_and_keeps_earlier_hole(tmp_path: Path):
+    path = tmp_path / "btc.csv"
+    calls: list[tuple[date, date]] = []
+
+    def fetch(start: date, end: date):
+        calls.append((start, end))
+        if len(calls) == 1:
+            return [_raw(date(2020, 1, 1), 10), _raw(date(2020, 1, 3), 30)]
+        return [_raw(date(2020, 1, 3), 31), _raw(date(2020, 1, 5), 50)]
+
+    update_coinbase_file(path, today=date(2020, 1, 3), fetch=fetch)
+    assert calls[0] == (COINBASE_START, date(2020, 1, 3))
+    update_coinbase_file(path, today=date(2020, 1, 5), fetch=fetch)
+    assert calls[1] == (date(2020, 1, 3), date(2020, 1, 5))
+    rows = read_candles(path)
+    assert [row.day for row in rows] == [
+        date(2020, 1, 1),
+        date(2020, 1, 3),
+        date(2020, 1, 5),
+    ]
+    assert rows[0].close == pytest.approx(10)
+    assert rows[1].close == pytest.approx(31)
+    assert rows[2].close == pytest.approx(50)
+
+
+def test_failed_fetch_leaves_csv_and_png(tmp_path: Path):
+    path = tmp_path / "btc.csv"
+
+    def fetch(start: date, end: date):
+        return [_raw(date(2020, 1, 1), 10), _raw(date(2020, 1, 2), 11)]
+
+    update_coinbase_file(path, today=date(2020, 1, 2), fetch=fetch)
+    csv_bytes = path.read_bytes()
+    png_bytes = path.with_suffix(".png").read_bytes()
+
+    def boom(start: date, end: date):
+        raise RuntimeError("coinbase down")
+
+    with pytest.raises(RuntimeError, match="coinbase down"):
+        update_coinbase_file(path, today=date(2020, 1, 3), fetch=boom)
+    assert path.read_bytes() == csv_bytes
+    assert path.with_suffix(".png").read_bytes() == png_bytes
+
+
+def test_fetch_coinbase_ohlc_chunks_and_keeps_raw_rows(monkeypatch: pytest.MonkeyPatch):
+    calls: list[tuple[date, date]] = []
+
+    def fake(start: date, end: date):
+        calls.append((start, end))
+        return [_raw(start, 5)]
+
+    monkeypatch.setattr(series_mod, "_fetch_coinbase_candles", fake)
+    end = COINBASE_START + timedelta(days=series_mod._COINBASE_MAX_CANDLES)
+    rows = series_mod.fetch_coinbase_ohlc(COINBASE_START, end)
+    assert len(calls) == 2
+    assert calls[0][0] == COINBASE_START
+    assert rows[0][4] == pytest.approx(5)
+    assert len(rows[0]) == 6
+
+
+def test_empty_first_fetch_writes_nothing(tmp_path: Path):
+    path = tmp_path / "btc.csv"
+
+    def fetch(start: date, end: date):
+        return []
+
+    with pytest.raises(ValueError):
+        update_coinbase_file(path, today=date(2020, 1, 2), fetch=fetch)
+    assert not path.exists()
+    assert not path.with_suffix(".png").exists()
+
+
+def test_main_writes_the_default_csv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    dest = tmp_path / "btc-usd-daily.csv"
+    monkeypatch.setattr("price_forecast.data.candles.BTC_USD_DAILY_CSV", dest)
+
+    def fetch(start: date, end: date):
+        assert start == COINBASE_START
+        assert end == date(2020, 1, 2)
+        return [_raw(date(2020, 1, 1), 10), _raw(date(2020, 1, 2), 11)]
+
+    monkeypatch.setattr("price_forecast.data.candles.fetch_coinbase_ohlc", fetch)
+    from price_forecast.data.candles import main
+
+    main(["--today", "2020-01-02"])
+    rows = read_candles(dest)
+    assert [row.day for row in rows] == [date(2020, 1, 1), date(2020, 1, 2)]
+    assert rows[1].close == pytest.approx(11)
+    assert dest.with_suffix(".png").is_file()

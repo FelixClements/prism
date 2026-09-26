@@ -22,7 +22,7 @@ from price_forecast.data.series import (
 from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
 from price_forecast.data.weekly import weekly_closes
 from price_forecast.strategies.signals import sma_signal
-from price_forecast.weekly_regime import (
+from price_forecast.backtest.t1 import (
     COST_BPS,
     SMA8_LOOKBACK,
     DollarBacktestResult,

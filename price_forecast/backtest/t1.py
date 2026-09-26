@@ -1,9 +1,8 @@
-"""Weekly BTC helpers and the archived t+1 in/out engine. Not a dollar-close forecast.
+"""Archived t+1 in/out engine. Not a dollar-close forecast.
 
-Live freeze is SMAGateV1 (`python -m price_forecast.sma8_16_kpis`). Weekly
-bars come from `price_forecast.data.weekly.weekly_closes`. The t+1 / 10 bp /
-strict-inequality backtest below belongs to
-`price_forecast/archive/frozen_t1_bakeoff/`.
+Live freeze is SMAGateV1 (`python -m price_forecast.strategies.smagate_v1`).
+Weekly bars come from `price_forecast.data.weekly.weekly_closes`. This module
+is archive-only.
 
 Frozen t+1 rules (do not retune after seeing results):
 

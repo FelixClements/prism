@@ -13,7 +13,7 @@ from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import (
     window_specs,
     winner_line,
 )
-from price_forecast.weekly_regime import BacktestResult
+from price_forecast.backtest.t1 import BacktestResult
 
 
 def test_frozen_strategies_are_the_three_families_plus_fng_overlay_and_fng_only():

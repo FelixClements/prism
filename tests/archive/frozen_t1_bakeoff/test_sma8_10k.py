@@ -9,7 +9,7 @@ from price_forecast.archive.frozen_t1_bakeoff.sma8_10k import (
     dollar_window_specs,
 )
 from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
-from price_forecast.weekly_regime import SMA8_LOOKBACK
+from price_forecast.backtest.t1 import SMA8_LOOKBACK
 
 
 def test_starting_capital_is_ten_thousand_dollars():

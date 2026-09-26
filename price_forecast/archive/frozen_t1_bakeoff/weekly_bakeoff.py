@@ -26,7 +26,7 @@ from price_forecast.strategies.signals import (
     dual_sma_signal,
     sma_signal,
 )
-from price_forecast.weekly_regime import (
+from price_forecast.backtest.t1 import (
     COST_BPS,
     FNG_FEAR_ENTRY,
     FNG_GREED_EXIT,

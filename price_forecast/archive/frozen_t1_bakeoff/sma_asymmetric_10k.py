@@ -27,7 +27,7 @@ from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import (
 )
 from price_forecast.data.weekly import weekly_closes
 from price_forecast.strategies.signals import asymmetric_sma_signal, sma_signal
-from price_forecast.weekly_regime import (
+from price_forecast.backtest.t1 import (
     COST_BPS,
     DD_IMPROVEMENT,
     SMA8_LOOKBACK,

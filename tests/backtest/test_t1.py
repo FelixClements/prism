@@ -1,4 +1,4 @@
-"""Weekly in/out regime filter: leakage-safe signals and delayed fills."""
+"""Archived t+1 / 10 bp engine: delayed fills, F&G overlay, dollar backtest."""
 
 from __future__ import annotations
 
@@ -7,10 +7,7 @@ from typing import Sequence
 
 import pytest
 
-from price_forecast.data.series import PriceSeries
-from price_forecast.data.weekly import weekly_closes
-from price_forecast.strategies.signals import sma_signal
-from price_forecast.weekly_regime import (
+from price_forecast.backtest.t1 import (
     COST_BPS,
     SMA8_LOOKBACK,
     BacktestResult,
@@ -24,38 +21,7 @@ from price_forecast.weekly_regime import (
     sma8_first_fill_date,
     sma_first_fill_date,
 )
-
-
-def test_weekly_close_is_last_utc_daily_in_sunday_ending_week():
-    # Monday 2022-01-03 .. Sunday 2022-01-09, rising $1/day.
-    daily = []
-    price = 100.0
-    day = date(2022, 1, 3)
-    while day <= date(2022, 1, 9):
-        daily.append((day, price))
-        price += 1.0
-        day += timedelta(days=1)
-    series = PriceSeries(daily)
-
-    weeks = weekly_closes(series)
-
-    assert weeks == [(date(2022, 1, 9), 106.0)]
-
-
-def test_incomplete_trailing_week_is_dropped():
-    # Full week Sun 2022-01-09, then Mon-Wed only.
-    daily = []
-    day = date(2022, 1, 3)
-    price = 100.0
-    while day <= date(2022, 1, 12):
-        daily.append((day, price))
-        price += 1.0
-        day += timedelta(days=1)
-    series = PriceSeries(daily)
-
-    weeks = weekly_closes(series)
-
-    assert [week_end for week_end, _close in weeks] == [date(2022, 1, 9)]
+from price_forecast.strategies.signals import sma_signal
 
 
 def _weeks_from_closes(closes: Sequence[float], *, start: date = date(2022, 1, 9)) -> list[tuple[date, float]]:

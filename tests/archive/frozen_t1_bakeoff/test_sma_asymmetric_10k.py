@@ -16,7 +16,7 @@ from price_forecast.archive.frozen_t1_bakeoff.sma_asymmetric_10k import (
     score_grid,
 )
 from price_forecast.archive.frozen_t1_bakeoff.weekly_bakeoff import LONG_RUN_WINDOW, WINDOWS
-from price_forecast.weekly_regime import DD_IMPROVEMENT, sma_first_fill_date
+from price_forecast.backtest.t1 import DD_IMPROVEMENT, sma_first_fill_date
 
 
 def test_starting_capital_is_ten_thousand_dollars():

@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from price_forecast.remix import (
+from price_forecast.remix.remix import (
     MEAN_BLOCK_BARS,
     main,
     remix_daily_closes,

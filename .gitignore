@@ -8,3 +8,7 @@ dist/
 build/
 
 .worktrees/
+
+data/btc-usd-daily.csv
+data/btc-usd-daily.png
+data/remix/

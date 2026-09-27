@@ -9,6 +9,7 @@ description = "Walk-forward harness for short-horizon Bitcoin price forecasts."
 requires-python = ">=3.11"
 readme = "README.md"
 dependencies = [
+    "matplotlib>=3.8",
     "numpy>=1.26",
     "scipy>=1.11",
     "statsmodels>=0.14",

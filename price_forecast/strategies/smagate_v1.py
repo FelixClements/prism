@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Sequence
 
-from price_forecast.data.series import load_daily_closes
+from price_forecast.data.candles import BTC_USD_DAILY_CSV, require_closes
 from price_forecast.data.weekly import weekly_closes
 
 BUY_WEEKS = 8
@@ -38,12 +37,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         default=STARTING_DOLLARS,
         help="Starting cash (default 10000).",
     )
+    parser.add_argument("--csv", type=Path, default=BTC_USD_DAILY_CSV)
     args = parser.parse_args(argv)
-    daily = load_daily_closes(
-        source="coinbase",
-        start=date(2018, 1, 1),
-        end=datetime.now(timezone.utc).date(),
-    )
+    daily = require_closes(args.csv)
     weeks = weekly_closes(daily)
     report = compute_kpis(weeks, starting_dollars=args.starting_dollars)
     strategy = simulate_strategy(

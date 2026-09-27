@@ -141,6 +141,21 @@ def load_coinbase_btc_usd(
     return PriceSeries(bars)
 
 
+def fetch_coinbase_ohlc(start: date, end: date) -> list[Sequence[float]]:
+    """Raw Coinbase rows [time, low, high, open, close, volume] for start..end inclusive."""
+    if end < start:
+        raise ValueError("end before start")
+    candles: list[Sequence[float]] = []
+    chunk_start = start
+    span = timedelta(days=_COINBASE_MAX_CANDLES - 1)
+    one = timedelta(days=1)
+    while chunk_start <= end:
+        chunk_end = min(chunk_start + span, end)
+        candles.extend(_fetch_coinbase_candles(chunk_start, chunk_end))
+        chunk_start = chunk_end + one
+    return candles
+
+
 def _fetch_coinbase_candles(start: date, end: date) -> list[Sequence[float]]:
     query = urlencode(
         {

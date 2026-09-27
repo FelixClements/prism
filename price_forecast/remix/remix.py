@@ -19,14 +19,24 @@ from __future__ import annotations
 
 import argparse
 import math
-from datetime import date, datetime, timezone
+from datetime import date
+from pathlib import Path
 from typing import Mapping, Sequence
 
 import numpy as np
 from arch.bootstrap import StationaryBootstrap, optimal_block_length
 from scipy.stats import kurtosis
 
-from price_forecast.data.series import PriceSeries, load_daily_closes
+from price_forecast.data.candles import (
+    BTC_USD_DAILY_CSV,
+    Candle,
+    REMIX_DIR,
+    closes_from_candles,
+    read_candles,
+    require_closes,
+    write_candles,
+)
+from price_forecast.data.series import PriceSeries
 from price_forecast.data.weekly import weekly_closes
 
 MEAN_BLOCK_BARS = 182
@@ -67,6 +77,51 @@ def remix_daily_closes(
         remixed = np.asarray(pos[0], dtype=float)
         rebuilt = np.concatenate(([start], start * np.exp(np.cumsum(remixed))))
         paths.append(PriceSeries(zip(dates, (float(p) for p in rebuilt))))
+    return tuple(paths)
+
+
+def remix_candle_paths(
+    candles: Sequence[Candle],
+    *,
+    n_paths: int,
+    mean_block_bars: int = MEAN_BLOCK_BARS,
+    seed: int = 0,
+) -> tuple[tuple[Candle, ...], ...]:
+    """Same closes as remix_daily_closes. Wicks scale from the landing source day."""
+    series = closes_from_candles(candles)
+    dates = list(series.dates())
+    prices = _close_array(series)
+    if prices.size < 2:
+        raise ValueError("need at least two daily closes to remix returns")
+    if len(candles) != prices.size:
+        raise ValueError("candle rows must align with closes")
+    log_returns = np.diff(np.log(prices))
+    start = float(prices[0])
+    bootstrap = StationaryBootstrap(int(mean_block_bars), log_returns, seed=seed)
+    paths: list[tuple[Candle, ...]] = []
+    for pos, _kw in bootstrap.bootstrap(n_paths):
+        remixed = np.asarray(pos[0], dtype=float)
+        indexes = np.asarray(bootstrap._index, dtype=int)
+        rebuilt = np.concatenate(([start], start * np.exp(np.cumsum(remixed))))
+        first = candles[0]
+        rows = [
+            Candle(first.day, first.low, first.high, first.open, float(rebuilt[0]), None)
+        ]
+        for step, source_return in enumerate(indexes):
+            landing = candles[int(source_return) + 1]
+            close = float(rebuilt[step + 1])
+            base = landing.close
+            rows.append(
+                Candle(
+                    dates[step + 1],
+                    close * (landing.low / base),
+                    close * (landing.high / base),
+                    close * (landing.open / base),
+                    close,
+                    None,
+                )
+            )
+        paths.append(tuple(rows))
     return tuple(paths)
 
 
@@ -133,6 +188,13 @@ def format_sanity_report(report: Mapping[str, object]) -> str:
 def format_optimal_block_diagnostic(series: PriceSeries) -> str:
     """arch optimal_block_length is a diagnostic, not the factory default."""
     log_returns = np.diff(np.log(_close_array(series)))
+    if log_returns.size < 8:
+        return (
+            "optimal_block_length (diagnostic only; factory default "
+            f"MEAN_BLOCK_BARS={MEAN_BLOCK_BARS}):\n"
+            "  stationary=n/a\n"
+            "  circular=n/a"
+        )
     table = optimal_block_length(log_returns)
     stationary = float(table["stationary"].iloc[0])
     circular = float(table["circular"].iloc[0])
@@ -144,31 +206,29 @@ def format_optimal_block_diagnostic(series: PriceSeries) -> str:
     )
 
 
-def main(
-    argv: Sequence[str] | None = None,
-    series: PriceSeries | None = None,
-) -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Remix Coinbase BTC daily log-returns with a stationary bootstrap. "
+            "Remix a candle CSV with a stationary bootstrap and write one CSV and PNG per path. "
             "Sanity only; does not score SMAGateV1."
         )
     )
-    parser.add_argument("--n-paths", type=int, default=1, help="Number of remixed paths.")
-    parser.add_argument("--seed", type=int, default=0, help="Bootstrap seed.")
-    parser.add_argument(
-        "--mean-block-bars",
-        type=int,
-        default=MEAN_BLOCK_BARS,
-        help=f"Mean stationary-bootstrap block length in bars (default {MEAN_BLOCK_BARS}).",
-    )
+    parser.add_argument("--csv", type=Path, default=BTC_USD_DAILY_CSV)
+    parser.add_argument("--n-paths", type=int, default=1)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--mean-block-bars", type=int, default=MEAN_BLOCK_BARS)
     args = parser.parse_args(argv)
-    if series is None:
-        series = load_daily_closes(
-            source="coinbase",
-            start=date(2018, 1, 1),
-            end=datetime.now(timezone.utc).date(),
-        )
+    series = require_closes(args.csv)
+    candles = read_candles(args.csv)
+    written = remix_candle_paths(
+        candles,
+        n_paths=args.n_paths,
+        mean_block_bars=args.mean_block_bars,
+        seed=args.seed,
+    )
+    REMIX_DIR.mkdir(parents=True, exist_ok=True)
+    for index, rows in enumerate(written):
+        write_candles(REMIX_DIR / f"btc-usd-daily-seed{args.seed}-path{index}.csv", rows)
     paths = remix_daily_closes(
         series,
         n_paths=args.n_paths,

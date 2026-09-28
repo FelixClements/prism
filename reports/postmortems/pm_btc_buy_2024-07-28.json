@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "postmortem_id": "pm_btc_buy_2024-07-28",
+  "signal_id": "btc_buy_2024-07-28",
+  "ticker": "BTC-USD",
+  "signal_date": "2024-07-28",
+  "source_skill": "smagate_v1_buy",
+  "predicted_direction": "LONG",
+  "entry_price": 68244.3,
+  "realized_returns": {
+    "5d": -0.10002652236157461,
+    "20d": -0.1281690925102903
+  },
+  "exit_price": 61418.06,
+  "exit_date": "2024-08-02",
+  "holding_days": 5,
+  "outcome_category": "FALSE_POSITIVE_SEVERE",
+  "regime_at_signal": "UNKNOWN",
+  "regime_at_exit": "UNKNOWN",
+  "outcome_notes": "Buy fill. LONG means the next 5 and 20 days should rise.",
+  "recorded_at": "2026-09-28T09:47:11.987145Z"
+}

@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "date_column": "date",
+  "strategy_column": "strategy_return",
+  "return_unit": "decimal",
+  "frequency": "weekly",
+  "primary_model": {
+    "name": "hodl",
+    "baseline_columns": ["hodl_return"]
+  },
+  "sensitivity_models": [
+    {
+      "name": "lagged_momentum",
+      "baseline_columns": ["momentum_return"]
+    },
+    {
+      "name": "hodl_plus_momentum",
+      "baseline_columns": ["hodl_return", "momentum_return"]
+    }
+  ],
+  "regime_columns": ["vol_regime"],
+  "rolling_window": 52,
+  "minimum_observations": 60,
+  "minimum_regime_observations": 20,
+  "minimum_rolling_windows": 12,
+  "hac_lags": "auto",
+  "include_series": true,
+  "data_declarations": {
+    "baseline_selection": "predeclared",
+    "strategy_return_basis": "net",
+    "baseline_return_basis": "net",
+    "analysis_scope": "in_sample",
+    "universe_data": "not_applicable"
+  }
+}

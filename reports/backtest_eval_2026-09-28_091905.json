@@ -1,0 +1,60 @@
+{
+  "total_score": 43,
+  "verdict": "Refine",
+  "dimensions": [
+    {
+      "name": "Sample Size",
+      "score": 0,
+      "max_score": 20
+    },
+    {
+      "name": "Expectancy",
+      "score": 0,
+      "max_score": 20
+    },
+    {
+      "name": "Risk Management",
+      "score": 12,
+      "max_score": 20
+    },
+    {
+      "name": "Robustness",
+      "score": 11,
+      "max_score": 20
+    },
+    {
+      "name": "Execution Realism",
+      "score": 20,
+      "max_score": 20
+    }
+  ],
+  "red_flags": [
+    {
+      "id": "small_sample",
+      "severity": "high",
+      "message": "Only 7 trades — minimum 30 required for statistical confidence."
+    },
+    {
+      "id": "over_optimized",
+      "severity": "medium",
+      "message": "8 parameters suggests over-optimization / curve-fitting risk."
+    },
+    {
+      "id": "negative_expectancy",
+      "severity": "high",
+      "message": "Negative expectancy (-0.177%) — strategy loses money on average."
+    }
+  ],
+  "profit_factor": 0.4955326531840426,
+  "expectancy": -0.17667174219999998,
+  "inputs": {
+    "total_trades": 7,
+    "win_rate": 28.5714,
+    "avg_win_pct": 0.6074,
+    "avg_loss_pct": 0.4903,
+    "max_drawdown_pct": 1.4439,
+    "years_tested": 8,
+    "num_parameters": 8,
+    "slippage_tested": true
+  }
+}

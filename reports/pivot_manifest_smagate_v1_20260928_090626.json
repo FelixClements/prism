@@ -1,0 +1,48 @@
+{
+  "generated_at_utc": "2026-09-28T09:06:26+00:00",
+  "strategy_id": "smagate_v1",
+  "diagnosis_file": "/home/adminodin/.t3/worktrees/prism/t3code-ce4259b3/reports/pivot_diagnosis_smagate_v1_20260928_090623.json",
+  "strategy_file": "/home/adminodin/.t3/worktrees/prism/t3code-ce4259b3/reports/edge_strategy_drafts/draft_smagate_v1.yaml",
+  "triggers_fired": [
+    "tail_risk"
+  ],
+  "total_pivots_generated": 3,
+  "exportable_count": 0,
+  "research_only_count": 3,
+  "drafts": [
+    {
+      "id": "pivot_smagate_v1_inv_tail_risk_statistical_pairs",
+      "path": "pivot_drafts/research_only/pivot_smagate_v1_inv_tail_risk_statistical_pairs_20260928_090626.yaml",
+      "category": "research_only",
+      "ticket_path": null,
+      "scores": {
+        "quality_potential": 0.85,
+        "novelty": 0.9091,
+        "combined": 0.8736
+      }
+    },
+    {
+      "id": "pivot_smagate_v1_inv_tail_risk_mean_reversion_pullback",
+      "path": "pivot_drafts/research_only/pivot_smagate_v1_inv_tail_risk_mean_reversion_pullback_20260928_090626.yaml",
+      "category": "research_only",
+      "ticket_path": null,
+      "scores": {
+        "quality_potential": 0.75,
+        "novelty": 0.9091,
+        "combined": 0.8136
+      }
+    },
+    {
+      "id": "pivot_smagate_v1_inv_tail_risk_event_driven_fade",
+      "path": "pivot_drafts/research_only/pivot_smagate_v1_inv_tail_risk_event_driven_fade_20260928_090626.yaml",
+      "category": "research_only",
+      "ticket_path": null,
+      "scores": {
+        "quality_potential": 0.7,
+        "novelty": 0.9091,
+        "combined": 0.7836
+      }
+    }
+  ],
+  "errors": []
+}

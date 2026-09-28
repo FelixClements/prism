@@ -1,0 +1,30 @@
+{
+  "note": "Full compute_entry_ready allowed 0 buys because Bitcoin almost never forms a valid stock VCP. These two rows use the skill's execution states on the existing SMA-8 buy.",
+  "baseline": {
+    "buys": 39,
+    "severe": 17,
+    "severe_rate": 0.436,
+    "end": 105936.88,
+    "max_dd": -0.5851,
+    "worst_trade": -0.3873,
+    "trades": 38
+  },
+  "skip_extended_and_overextended": {
+    "buys": 37,
+    "severe": 17,
+    "severe_rate": 0.459,
+    "end": 90492.9,
+    "max_dd": -0.5851,
+    "worst_trade": -0.3873,
+    "trades": 36
+  },
+  "only_prebreakout_or_breakout": {
+    "buys": 24,
+    "severe": 12,
+    "severe_rate": 0.5,
+    "end": 129633.71,
+    "max_dd": -0.4767,
+    "worst_trade": -0.3873,
+    "trades": 23
+  }
+}

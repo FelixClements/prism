@@ -1,0 +1,29 @@
+id: smagate_v1
+concept_id: coinbase_weekly_btc_sma_gate
+hypothesis_type: breakout
+mechanism_tag: behavior
+entry_family: pivot_breakout
+regime: Neutral
+thesis: >
+  Weekly BTC-USD, all-in or cash. Enter when flat and the weekly close is
+  above the 8-week average. Exit when long and the weekly close is below the
+  16-week average. No percent stop and no profit target. The catalog label
+  trend_following_breakout is only the nearest archetype bucket.
+entry:
+  conditions:
+    - weekly_close > sma_8 while flat
+    - fill at the weekly close used by the test
+  trend_filter:
+    - exit when weekly_close < sma_16
+exit:
+  stop_loss_pct: 0.594
+  take_profit_rr: 0
+  time_stop_days: 112
+risk:
+  position_sizing: all_in_or_cash
+  risk_per_trade: 1.0
+  max_positions: 1
+  max_sector_exposure: 1.0
+invalidation_signals:
+  - punished next-bar fill with 0.30% fee still draws down 59.4%
+universe: BTC-USD weekly Coinbase

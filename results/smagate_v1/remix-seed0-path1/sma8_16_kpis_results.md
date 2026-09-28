@@ -3,7 +3,7 @@
 **SMAGateV1** (user-named freeze of the locked best-so-far, 2026-09-18). Not investment advice.
 This is a historical backtest of one execution design, not a product rule. V1 is this freeze, not a new rule.
 
-KPI snapshot: start $10,000.00; 2018-04-22 → 2026-09-27 (441 comparable weeks after SMA-16 warmup); strategy end $172,247.72 vs HODL $95,890.11; total return 1622.48% vs HODL 858.90%; max DD -50.27% vs HODL -75.19%; alpha +763.58 pp; exposure 58.73%.
+KPI snapshot: start $10,000.00; 2018-04-22 → 2026-09-27 (441 comparable weeks after SMA-16 warmup); strategy end $23,670.49 vs HODL $15,841.39; total return 136.70% vs HODL 58.41%; max DD -61.38% vs HODL -83.05%; alpha +78.29 pp; exposure 56.01%.
 
 Caveats:
 - Same-bar weekly close fill: SMA at week t includes close t and the fill is close t. That is contemporaneous fill, not future lookahead. It is more optimistic than the frozen t+1 bakeoff.
@@ -19,8 +19,8 @@ dollars to `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` as if the r
 
 Date range: 2018-04-22 → 2026-09-27 (441 comparable weekly bars after SMA-16 warmup).
 Start $: $10,000.00
-End $ strategy: $172,247.72    End $ buy & hold: $95,890.11
-Start BTC price: $8,795.01    End BTC price: $84,462.14
+End $ strategy: $23,670.49    End $ buy & hold: $15,841.39
+Start BTC price: $11,139.55    End BTC price: $17,673.10
 Series: weekly close from daily BTC-USD coinbase (UTC).
 
 Whipsaw = completed round trip with holding period <= 2 weekly bars (holding period = sell bar index − buy bar index).
@@ -32,20 +32,20 @@ Strategy alpha is excess total return (strategy TR − HODL TR), not CAPM alpha.
 
 KPI                                                  Strategy       Buy & Hold
 -------------------------------------------- ---------------- ----------------
-Absolute Total Return (%)                            1622.48%          858.90%
-Strategy Alpha (excess total return)               +763.58 pp              n/a
-Profit Factor                                          1.7677              n/a
-Max DD %                                              -50.27%          -75.19%
-Sortino Ratio (ann., rf=0%)                            1.2945           1.0985
-MAR Ratio                                              0.7988           0.4089
-Market Exposure Time %                                 58.73%              n/a
-Completed round trips                                      38              n/a
-Win Rate                                               34.21%              n/a
-Whipsaws (<=2 weekly bars)                                 27              n/a
-Total fees $                                       $11,649.70           $15.00
-Fees % of start $                                     116.50%            0.15%
-No-fee total return                                  1833.54%          860.34%
-Fee drag on total return                           +211.06 pp         +1.44 pp
+Absolute Total Return (%)                             136.70%           58.41%
+Strategy Alpha (excess total return)                +78.29 pp              n/a
+Profit Factor                                          1.7713              n/a
+Max DD %                                              -61.38%          -83.05%
+Sortino Ratio (ann., rf=0%)                            0.5368           0.5677
+MAR Ratio                                              0.1753           0.0675
+Market Exposure Time %                                 56.01%              n/a
+Completed round trips                                      42              n/a
+Win Rate                                               40.48%              n/a
+Whipsaws (<=2 weekly bars)                                 25              n/a
+Total fees $                                        $1,122.11           $15.00
+Fees % of start $                                      11.22%            0.15%
+No-fee total return                                   168.92%           58.65%
+Fee drag on total return                            +32.21 pp         +0.24 pp
 
 How to re-run:
 

@@ -1,0 +1,65 @@
+[
+  {
+    "name": "SMA-8/16 only",
+    "end": 105936.88,
+    "max_dd": -0.5851,
+    "year_2022": -0.3832,
+    "chapter_2025_10": -0.213,
+    "worst_trade": -0.3873,
+    "trades": 38
+  },
+  {
+    "name": "Buy only if RSI(14) > 50",
+    "end": 96044.25,
+    "max_dd": -0.5592,
+    "year_2022": -0.1524,
+    "chapter_2025_10": -0.1281,
+    "worst_trade": -0.38,
+    "trades": 19
+  },
+  {
+    "name": "Also sell if RSI(14) < 40",
+    "end": 102690.94,
+    "max_dd": -0.5839,
+    "year_2022": -0.3814,
+    "chapter_2025_10": -0.213,
+    "worst_trade": -0.3873,
+    "trades": 39
+  },
+  {
+    "name": "RSI buy and RSI sell",
+    "end": 96044.25,
+    "max_dd": -0.5592,
+    "year_2022": -0.1524,
+    "chapter_2025_10": -0.1281,
+    "worst_trade": -0.38,
+    "trades": 19
+  },
+  {
+    "name": "Buy only if SMA-8 > SMA-16",
+    "end": 122322.14,
+    "max_dd": -0.5364,
+    "year_2022": 0.0,
+    "chapter_2025_10": -0.0767,
+    "worst_trade": -0.4628,
+    "trades": 12
+  },
+  {
+    "name": "Buy only on a 12-week high",
+    "end": 87317.49,
+    "max_dd": -0.5418,
+    "year_2022": 0.0,
+    "chapter_2025_10": -0.1724,
+    "worst_trade": -0.4759,
+    "trades": 11
+  },
+  {
+    "name": "Also sell on a 3-ATR drop from the peak",
+    "end": 105936.88,
+    "max_dd": -0.5851,
+    "year_2022": -0.3832,
+    "chapter_2025_10": -0.213,
+    "worst_trade": -0.3873,
+    "trades": 38
+  }
+]

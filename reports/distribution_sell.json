@@ -1,0 +1,58 @@
+{
+  "sma16_only": {
+    "end": 109107.12,
+    "max_dd": -0.5203,
+    "dd_peak": "2019-08-11",
+    "dd_peak_dollars": 22313.8,
+    "dd_trough": "2020-05-24",
+    "dd_trough_dollars": 10703.27,
+    "worst_trade": -0.4652,
+    "trades": 13,
+    "extra_dist_sells": 0,
+    "y2022": 0.0,
+    "oct25_jun26": -0.0628,
+    "y2024": 0.9033
+  },
+  "dist_4": {
+    "end": 8001.79,
+    "max_dd": -0.3826,
+    "dd_peak": "2021-08-29",
+    "dd_peak_dollars": 11928.14,
+    "dd_trough": "2026-08-30",
+    "dd_trough_dollars": 7364.01,
+    "worst_trade": -0.1473,
+    "trades": 44,
+    "extra_dist_sells": 41,
+    "y2022": 0.0,
+    "oct25_jun26": -0.1108,
+    "y2024": -0.2645
+  },
+  "dist_5": {
+    "end": 13202.6,
+    "max_dd": -0.3141,
+    "dd_peak": "2020-02-16",
+    "dd_peak_dollars": 15830.73,
+    "dd_trough": "2021-10-10",
+    "dd_trough_dollars": 10857.65,
+    "worst_trade": -0.1473,
+    "trades": 38,
+    "extra_dist_sells": 33,
+    "y2022": 0.0,
+    "oct25_jun26": -0.0628,
+    "y2024": -0.1733
+  },
+  "dist_6": {
+    "end": 26751.73,
+    "max_dd": -0.232,
+    "dd_peak": "2020-02-16",
+    "dd_peak_dollars": 16857.26,
+    "dd_trough": "2020-09-06",
+    "dd_trough_dollars": 12945.7,
+    "worst_trade": -0.1473,
+    "trades": 33,
+    "extra_dist_sells": 27,
+    "y2022": 0.0,
+    "oct25_jun26": -0.0628,
+    "y2024": -0.1053
+  }
+}

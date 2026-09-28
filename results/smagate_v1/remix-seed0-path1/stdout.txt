@@ -1,0 +1,219 @@
+# SMAGateV1 — weekly BTC SMA-8 in / SMA-16 out vs buy-and-hold
+
+**SMAGateV1** (user-named freeze of the locked best-so-far, 2026-09-18). Not investment advice.
+This is a historical backtest of one execution design, not a product rule. V1 is this freeze, not a new rule.
+
+KPI snapshot: start $10,000.00; 2018-04-22 → 2026-09-27 (441 comparable weeks after SMA-16 warmup); strategy end $23,670.49 vs HODL $15,841.39; total return 136.70% vs HODL 58.41%; max DD -61.38% vs HODL -83.05%; alpha +78.29 pp; exposure 56.01%.
+
+Caveats:
+- Same-bar weekly close fill: SMA at week t includes close t and the fill is close t. That is contemporaneous fill, not future lookahead. It is more optimistic than the frozen t+1 bakeoff.
+- Start in cash (FLAT) until the first close > SMA-8 after SMA-16 exists. The frozen $10k crash-window tables start in BTC.
+- 0.15% of notional on each fill. Frozen bakeoff uses 10 bps; this runner now also uses strict > / < (on the line is HOLD).
+- Not the frozen t+1 bakeoff (archived at `archive/frozen_t1_bakeoff/`).
+- Full-sample KPIs in this table. Monthly rows and the 2022 / Oct 2025–Jun 2026 chapters are in `sma8_16_kpis_monthly.md` (also `.csv`). A full-sample dollar figure can still hide a bad crash window; SMAGateV1 still takes ~30-40% crash chapters. Read those months.
+
+Same-bar fill at the weekly close (more optimistic than the frozen t+1 bakeoff).
+Cost is 0.15% per fill vs the frozen bakeoff's 10 bps. Entry uses close > SMA-8;
+exit uses close < SMA-16 (on the line is HOLD). Do not compare these
+dollars to `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` as if the rules were the same.
+
+Date range: 2018-04-22 → 2026-09-27 (441 comparable weekly bars after SMA-16 warmup).
+Start $: $10,000.00
+End $ strategy: $23,670.49    End $ buy & hold: $15,841.39
+Start BTC price: $11,139.55    End BTC price: $17,673.10
+Series: weekly close from daily BTC-USD coinbase (UTC).
+
+Whipsaw = completed round trip with holding period <= 2 weekly bars (holding period = sell bar index − buy bar index).
+Open trades are marked to the last close in total return and max DD; profit factor also includes that MTM as a virtual close (no extra 0.15% exit fee).
+Win rate / trade count / whipsaws count completed buy→sell round trips only.
+HODL pays 0.15% once at entry.
+
+Strategy alpha is excess total return (strategy TR − HODL TR), not CAPM alpha.
+
+KPI                                                  Strategy       Buy & Hold
+-------------------------------------------- ---------------- ----------------
+Absolute Total Return (%)                             136.70%           58.41%
+Strategy Alpha (excess total return)                +78.29 pp              n/a
+Profit Factor                                          1.7713              n/a
+Max DD %                                              -61.38%          -83.05%
+Sortino Ratio (ann., rf=0%)                            0.5368           0.5677
+MAR Ratio                                              0.1753           0.0675
+Market Exposure Time %                                 56.01%              n/a
+Completed round trips                                      42              n/a
+Win Rate                                               40.48%              n/a
+Whipsaws (<=2 weekly bars)                                 25              n/a
+Total fees $                                        $1,122.11           $15.00
+Fees % of start $                                      11.22%            0.15%
+No-fee total return                                   168.92%           58.65%
+Fee drag on total return                            +32.21 pp         +0.24 pp
+
+How to re-run:
+
+```
+.venv/bin/python -m price_forecast.strategies.smagate_v1
+.venv/bin/python -m price_forecast.strategies.smagate_v1 --starting-dollars 10000
+```
+
+Monthly + cumulative-to-date grid: `sma8_16_kpis_monthly.md` / `sma8_16_kpis_monthly.csv`.
+
+## Monthly returns vs buy-and-hold (compact)
+
+Each row is one UTC calendar month of Sunday weekly bars. Monthly return is that month's last equity / previous month-end equity − 1 (first month vs start $). Max DD is peak-to-trough on equity inside the month. `*` marks 2022 and 2025-10 through 2026-06.
+
+ Year-month     Strat end$  Strat m/m      HODL end$   HODL m/m   Strat DD    HODL DD     Exp% Trips         Fees  Held
+ 2018-04       $10,181.79      1.82%     $10,181.79      1.82%      0.00%      0.00%  100.00%     0       $15.00   BTC
+ 2018-05       $11,934.19     17.21%     $11,934.19     17.21%      0.00%      0.00%  100.00%     0        $0.00   BTC
+ 2018-06       $10,630.16    -10.93%     $10,630.16    -10.93%     -7.60%     -7.60%  100.00%     0        $0.00   BTC
+ 2018-07       $10,773.61      1.35%     $10,773.61      1.35%     -6.23%     -6.23%  100.00%     0        $0.00   BTC
+ 2018-08       $10,277.77     -4.60%      $9,449.67    -12.29%      0.00%    -14.17%    0.00%     1       $15.44  cash
+ 2018-09       $10,602.09      3.16%      $9,844.55      4.18%     -0.15%     -9.58%   20.00%     1       $31.34  cash
+ 2018-10       $11,763.92     10.96%     $11,879.79     20.67%     -0.32%     -0.32%  100.00%     0       $15.90   BTC
+ 2018-11       $11,901.72      1.17%     $12,018.95      1.17%     -3.25%     -3.25%  100.00%     0        $0.00   BTC
+ 2018-12       $13,079.65      9.90%     $13,208.48      9.90%     -2.03%     -2.03%  100.00%     0        $0.00   BTC
+ 2019-01       $12,952.45     -0.97%     $13,080.02     -0.97%     -2.56%     -2.56%  100.00%     0        $0.00   BTC
+ 2019-02       $12,229.66     -5.58%     $12,978.15     -0.78%     -0.15%     -0.81%   25.00%     1       $36.77   BTC
+ 2019-03       $11,701.93     -4.32%     $12,436.78     -4.17%    -11.48%    -11.35%   80.00%     1       $17.58  cash
+ 2019-04       $11,701.93      0.00%     $10,359.55    -16.70%      0.00%    -19.27%    0.00%     0        $0.00  cash
+ 2019-05       $11,701.93      0.00%      $9,720.31     -6.17%      0.00%     -4.67%    0.00%     0        $0.00  cash
+ 2019-06       $11,316.52     -3.29%     $10,411.18      7.11%     -3.29%     -2.86%   40.00%     1       $51.58   BTC
+ 2019-07       $10,773.43     -4.80%      $7,745.22    -25.61%      0.00%    -21.97%    0.00%     1       $16.18  cash
+ 2019-08       $10,757.27     -0.15%      $8,423.29      8.75%     -0.15%     -0.58%   25.00%     0       $16.16   BTC
+ 2019-09       $10,328.34     -3.99%      $8,533.34      1.31%     -0.15%     -5.84%   20.00%     2       $46.04  cash
+ 2019-10       $10,256.80     -0.69%      $8,654.72      1.42%     -5.85%     -5.85%  100.00%     0       $15.49   BTC
+ 2019-11        $9,492.11     -7.46%      $7,454.87    -13.86%     -7.82%    -18.36%   25.00%     1       $14.26  cash
+ 2019-12        $9,477.87     -0.15%      $7,335.21     -1.61%     -0.15%     -5.92%   20.00%     0       $14.24   BTC
+ 2020-01        $9,298.08     -1.90%      $7,253.23     -1.12%     -0.15%     -0.36%   25.00%     2       $41.72  cash
+ 2020-02        $9,189.32     -1.17%      $8,793.19     21.23%     -1.16%     -1.16%  100.00%     0       $13.95   BTC
+ 2020-03        $7,773.31    -15.41%      $7,449.38    -15.28%    -28.30%    -28.19%   80.00%     1       $11.68  cash
+ 2020-04        $7,773.31      0.00%      $7,707.67      3.47%      0.00%    -37.92%    0.00%     0        $0.00  cash
+ 2020-05        $6,212.24    -20.08%      $5,635.45    -26.89%    -20.08%    -28.41%   20.00%     1       $20.99  cash
+ 2020-06        $6,212.24      0.00%      $3,954.10    -29.84%      0.00%    -18.88%    0.00%     0        $0.00  cash
+ 2020-07        $6,212.24      0.00%      $3,879.91     -1.88%      0.00%     -8.79%    0.00%     0        $0.00  cash
+ 2020-08        $7,358.65     18.45%      $5,061.86     30.46%     -0.15%      0.00%   80.00%     1       $29.90   BTC
+ 2020-09        $7,495.82      1.86%      $5,156.21      1.86%     -9.09%     -9.09%  100.00%     0        $0.00   BTC
+ 2020-10        $8,226.84      9.75%      $5,659.06      9.75%      0.00%      0.00%  100.00%     0        $0.00   BTC
+ 2020-11        $8,394.06      2.03%      $5,774.09      2.03%     -2.94%     -2.94%  100.00%     0        $0.00   BTC
+ 2020-12        $7,826.78     -6.76%      $5,635.10     -2.41%     -1.94%     -1.65%   75.00%     1       $23.53   BTC
+ 2021-01        $6,595.67    -15.73%      $5,277.02     -6.35%    -16.86%    -11.11%   60.00%     2       $32.05  cash
+ 2021-02        $6,595.67      0.00%      $4,858.38     -7.93%      0.00%     -9.54%    0.00%     0        $0.00  cash
+ 2021-03        $6,595.67      0.00%      $4,513.44     -7.10%      0.00%      0.00%    0.00%     0        $0.00  cash
+ 2021-04        $6,585.77     -0.15%      $4,439.51     -1.64%     -0.15%      0.00%   25.00%     0        $9.89   BTC
+ 2021-05        $6,905.44      4.85%      $3,229.09    -27.26%      0.00%    -34.31%    0.00%     1       $10.37  cash
+ 2021-06        $6,905.44      0.00%      $3,439.95      6.53%      0.00%     -0.50%    0.00%     0        $0.00  cash
+ 2021-07        $6,761.41     -2.09%      $3,501.72      1.80%     -1.94%     -4.32%   50.00%     1       $30.69   BTC
+ 2021-08        $7,309.34      8.10%      $3,954.39     12.93%     -2.67%     -2.52%   80.00%     1       $21.22   BTC
+ 2021-09        $5,743.51    -21.42%      $3,100.11    -21.60%    -17.84%    -18.03%   50.00%     1        $8.63  cash
+ 2021-10        $5,743.51      0.00%      $3,110.21      0.33%      0.00%     -5.05%    0.00%     0        $0.00  cash
+ 2021-11        $5,605.81     -2.40%      $3,093.37     -0.54%     -2.25%     -2.50%   50.00%     2       $34.14  cash
+ 2021-12        $5,867.62      4.67%      $3,732.83     20.67%     -5.82%     -5.82%  100.00%     0        $8.41   BTC
+*2022-01        $8,141.17     38.75%      $5,179.20     38.75%      0.00%      0.00%  100.00%     0        $0.00   BTC
+*2022-02        $7,865.82     -3.38%      $5,004.04     -3.38%    -12.70%    -12.70%  100.00%     0        $0.00   BTC
+*2022-03        $8,667.66     10.19%      $5,514.15     10.19%     -7.60%     -7.60%  100.00%     0        $0.00   BTC
+*2022-04        $7,759.91    -10.47%      $4,944.07    -10.34%     -9.94%     -9.81%   75.00%     1       $11.66  cash
+*2022-05        $7,759.91      0.00%      $4,459.10     -9.81%      0.00%     -8.84%    0.00%     0        $0.00  cash
+*2022-06        $7,992.77      3.00%      $5,134.88     15.16%     -0.15%      0.00%   50.00%     1       $35.67   BTC
+*2022-07        $8,906.26     11.43%      $5,721.75     11.43%     -3.25%     -3.25%  100.00%     0        $0.00   BTC
+*2022-08        $9,012.92      1.20%      $5,790.27      1.20%     -4.43%     -4.43%  100.00%     0        $0.00   BTC
+*2022-09        $9,929.36     10.17%      $6,379.02     10.17%     -2.03%     -2.03%  100.00%     0        $0.00   BTC
+*2022-10        $9,247.50     -6.87%      $5,901.96     -7.48%     -7.36%     -7.97%   60.00%     1       $13.89  cash
+*2022-11        $9,152.32     -1.03%      $6,178.83      4.69%     -2.44%     -2.29%   75.00%     0       $13.87   BTC
+*2022-12        $8,835.18     -3.47%      $6,163.80     -0.24%    -11.48%    -11.35%   50.00%     1       $13.27  cash
+ 2023-01        $8,835.18      0.00%      $4,661.59    -24.37%      0.00%    -19.03%    0.00%     0        $0.00  cash
+ 2023-02        $8,835.18      0.00%      $4,706.35      0.96%      0.00%     -4.67%    0.00%     0        $0.00  cash
+ 2023-03        $8,134.14     -7.93%      $4,767.90      1.31%     -7.80%     -5.99%   50.00%     2       $51.16  cash
+ 2023-04        $8,134.14      0.00%      $3,718.80    -22.00%      0.00%    -17.85%    0.00%     0        $0.00  cash
+ 2023-05        $7,675.26     -5.64%      $3,605.62     -3.04%     -5.64%    -10.88%   25.00%     1       $23.73  cash
+ 2023-06        $7,786.39      1.45%      $4,179.78     15.92%     -0.15%      0.00%   50.00%     1       $34.92   BTC
+ 2023-07        $7,166.72     -7.96%      $3,852.92     -7.82%    -12.87%    -12.74%   80.00%     1       $10.77  cash
+ 2023-08        $7,166.72      0.00%      $3,250.42    -15.64%      0.00%     -9.23%    0.00%     0        $0.00  cash
+ 2023-09        $7,031.92     -1.88%      $3,449.55      6.13%     -1.88%     -1.72%   25.00%     1       $21.31  cash
+ 2023-10        $8,731.04     24.16%      $4,541.39     31.65%     -4.83%     -4.83%  100.00%     0       $10.55   BTC
+ 2023-11        $5,928.93    -32.09%      $3,088.53    -31.99%    -32.66%    -32.55%   75.00%     1        $8.91  cash
+ 2023-12        $5,928.93      0.00%      $2,684.30    -13.09%      0.00%    -14.16%    0.00%     0        $0.00  cash
+ 2024-01        $5,299.74    -10.61%      $2,540.16     -5.37%    -10.61%    -10.44%   25.00%     1       $16.85  cash
+ 2024-02        $5,291.79     -0.15%      $2,761.00      8.69%     -0.15%      0.00%   25.00%     0        $7.95   BTC
+ 2024-03        $5,258.87     -0.62%      $2,784.75      0.86%     -1.98%     -1.98%   80.00%     1       $15.50   BTC
+ 2024-04        $7,419.71     41.09%      $3,928.98     41.09%      0.00%      0.00%  100.00%     0        $0.00   BTC
+ 2024-05       $10,663.65     43.72%      $5,646.76     43.72%     -0.49%     -0.49%  100.00%     0        $0.00   BTC
+ 2024-06       $15,764.78     47.84%      $8,347.98     47.84%    -11.98%    -11.98%  100.00%     0        $0.00   BTC
+ 2024-07       $13,196.12    -16.29%      $6,987.79    -16.29%    -25.04%    -25.04%  100.00%     0        $0.00   BTC
+ 2024-08       $14,441.91      9.44%      $7,647.48      9.44%     -6.07%     -6.07%  100.00%     0        $0.00   BTC
+ 2024-09       $11,422.03    -20.91%      $6,057.43    -20.79%    -19.86%    -19.74%   80.00%     1       $17.16  cash
+ 2024-10       $11,422.03      0.00%      $5,698.61     -5.92%      0.00%     -3.57%    0.00%     0        $0.00  cash
+ 2024-11       $11,404.90     -0.15%      $5,597.03     -1.78%     -0.15%     -6.50%   25.00%     0       $17.13   BTC
+ 2024-12       $13,818.46     21.16%      $6,781.50     21.16%    -14.74%    -14.74%  100.00%     0        $0.00   BTC
+ 2025-01       $13,575.50     -1.76%      $6,662.27     -1.76%    -12.68%    -12.68%  100.00%     0        $0.00   BTC
+ 2025-02       $12,546.49     -7.58%      $6,670.73      0.13%     -8.10%     -7.96%   25.00%     1       $18.85  cash
+ 2025-03       $12,546.49      0.00%      $5,118.70    -23.27%      0.00%    -21.78%    0.00%     0        $0.00  cash
+ 2025-04       $11,846.32     -5.58%      $5,442.59      6.33%     -5.58%     -8.60%   25.00%     1       $36.62  cash
+ 2025-05       $11,846.32      0.00%      $4,665.49    -14.28%      0.00%     -6.57%    0.00%     0        $0.00  cash
+ 2025-06       $12,840.46      8.39%      $5,726.99     22.75%     -0.15%      0.00%   40.00%     0       $17.77   BTC
+ 2025-07       $14,964.19     16.54%      $6,674.20     16.54%      0.00%      0.00%  100.00%     0        $0.00   BTC
+ 2025-08        $8,121.97    -45.72%      $3,993.78    -40.16%    -41.94%    -41.85%   60.00%     1       $12.20  cash
+ 2025-09        $8,121.97      0.00%      $4,528.78     13.40%      0.00%      0.00%    0.00%     0        $0.00  cash
+*2025-10       $10,049.60     23.73%      $5,992.56     32.32%     -5.08%     -5.08%  100.00%     0       $12.18   BTC
+*2025-11       $11,259.96     12.04%      $6,714.30     12.04%      0.00%      0.00%  100.00%     0        $0.00   BTC
+*2025-12       $10,161.05     -9.76%      $6,059.02     -9.76%    -15.08%    -15.08%  100.00%     0        $0.00   BTC
+*2026-01        $9,960.47     -1.97%      $6,421.13      5.98%     -2.49%     -2.20%   75.00%     1       $29.95   BTC
+*2026-02       $13,348.09     34.01%      $8,604.99     34.01%      0.00%      0.00%  100.00%     0        $0.00   BTC
+*2026-03       $16,947.29     26.96%     $10,925.26     26.96%     -4.47%     -4.47%  100.00%     0        $0.00   BTC
+*2026-04       $29,667.28     75.06%     $19,125.35     75.06%      0.00%      0.00%  100.00%     0        $0.00   BTC
+*2026-05       $27,692.90     -6.66%     $17,852.54     -6.66%     -9.99%     -9.99%  100.00%     0        $0.00   BTC
+*2026-06       $28,384.12      2.50%     $18,298.14      2.50%     -6.31%     -6.31%  100.00%     0        $0.00   BTC
+ 2026-07       $22,339.93    -21.29%     $13,903.21    -24.02%    -16.28%    -19.17%   25.00%     1       $33.56  cash
+ 2026-08       $22,339.93      0.00%     $13,569.64     -2.40%      0.00%     -6.47%    0.00%     0        $0.00  cash
+ 2026-09       $23,670.49      5.96%     $15,841.39     16.74%     -0.15%      0.00%   75.00%     0       $33.51   BTC
+
+## Highlighted chapters
+
+Reprinted from the compact monthly table. Not investment advice.
+
+### 2022
+
+Chapter window 2022-01-02 → 2022-12-25 (52 weekly bars). Start $ is the prior bar's equity (continuing path, not a fresh $10k). Max DD is peak-to-trough inside the chapter.
+  Strategy: $5,867.62 → $8,835.18 (50.58%); max DD -14.01%
+  HODL:     $3,732.83 → $6,163.80 (65.12%); max DD -25.97%
+
+## Monthly returns vs buy-and-hold (compact)
+
+Each row is one UTC calendar month of Sunday weekly bars. Monthly return is that month's last equity / previous month-end equity − 1 (first month vs start $). Max DD is peak-to-trough on equity inside the month. `*` marks 2022 and 2025-10 through 2026-06.
+
+ Year-month     Strat end$  Strat m/m      HODL end$   HODL m/m   Strat DD    HODL DD     Exp% Trips         Fees  Held
+*2022-01        $8,141.17     38.75%      $5,179.20     38.75%      0.00%      0.00%  100.00%     0        $0.00   BTC
+*2022-02        $7,865.82     -3.38%      $5,004.04     -3.38%    -12.70%    -12.70%  100.00%     0        $0.00   BTC
+*2022-03        $8,667.66     10.19%      $5,514.15     10.19%     -7.60%     -7.60%  100.00%     0        $0.00   BTC
+*2022-04        $7,759.91    -10.47%      $4,944.07    -10.34%     -9.94%     -9.81%   75.00%     1       $11.66  cash
+*2022-05        $7,759.91      0.00%      $4,459.10     -9.81%      0.00%     -8.84%    0.00%     0        $0.00  cash
+*2022-06        $7,992.77      3.00%      $5,134.88     15.16%     -0.15%      0.00%   50.00%     1       $35.67   BTC
+*2022-07        $8,906.26     11.43%      $5,721.75     11.43%     -3.25%     -3.25%  100.00%     0        $0.00   BTC
+*2022-08        $9,012.92      1.20%      $5,790.27      1.20%     -4.43%     -4.43%  100.00%     0        $0.00   BTC
+*2022-09        $9,929.36     10.17%      $6,379.02     10.17%     -2.03%     -2.03%  100.00%     0        $0.00   BTC
+*2022-10        $9,247.50     -6.87%      $5,901.96     -7.48%     -7.36%     -7.97%   60.00%     1       $13.89  cash
+*2022-11        $9,152.32     -1.03%      $6,178.83      4.69%     -2.44%     -2.29%   75.00%     0       $13.87   BTC
+*2022-12        $8,835.18     -3.47%      $6,163.80     -0.24%    -11.48%    -11.35%   50.00%     1       $13.27  cash
+
+### 2025-10 through 2026-06
+
+Chapter window 2025-10-05 → 2026-06-28 (39 weekly bars). Start $ is the prior bar's equity (continuing path, not a fresh $10k). Max DD is peak-to-trough inside the chapter.
+  Strategy: $8,121.97 → $28,384.12 (249.47%); max DD -15.27%
+  HODL:     $4,528.78 → $18,298.14 (304.04%); max DD -15.27%
+
+## Monthly returns vs buy-and-hold (compact)
+
+Each row is one UTC calendar month of Sunday weekly bars. Monthly return is that month's last equity / previous month-end equity − 1 (first month vs start $). Max DD is peak-to-trough on equity inside the month. `*` marks 2022 and 2025-10 through 2026-06.
+
+ Year-month     Strat end$  Strat m/m      HODL end$   HODL m/m   Strat DD    HODL DD     Exp% Trips         Fees  Held
+*2025-10       $10,049.60     23.73%      $5,992.56     32.32%     -5.08%     -5.08%  100.00%     0       $12.18   BTC
+*2025-11       $11,259.96     12.04%      $6,714.30     12.04%      0.00%      0.00%  100.00%     0        $0.00   BTC
+*2025-12       $10,161.05     -9.76%      $6,059.02     -9.76%    -15.08%    -15.08%  100.00%     0        $0.00   BTC
+*2026-01        $9,960.47     -1.97%      $6,421.13      5.98%     -2.49%     -2.20%   75.00%     1       $29.95   BTC
+*2026-02       $13,348.09     34.01%      $8,604.99     34.01%      0.00%      0.00%  100.00%     0        $0.00   BTC
+*2026-03       $16,947.29     26.96%     $10,925.26     26.96%     -4.47%     -4.47%  100.00%     0        $0.00   BTC
+*2026-04       $29,667.28     75.06%     $19,125.35     75.06%      0.00%      0.00%  100.00%     0        $0.00   BTC
+*2026-05       $27,692.90     -6.66%     $17,852.54     -6.66%     -9.99%     -9.99%  100.00%     0        $0.00   BTC
+*2026-06       $28,384.12      2.50%     $18,298.14      2.50%     -6.31%     -6.31%  100.00%     0        $0.00   BTC
+
+Full cumulative KPI grid (monthly + cumulative-to-date columns) is in /home/adminodin/.t3/worktrees/prism/t3code-ce4259b3/results/sma8_16_kpis_monthly.md and /home/adminodin/.t3/worktrees/prism/t3code-ce4259b3/results/sma8_16_kpis_monthly.csv.
+Wrote /home/adminodin/.t3/worktrees/prism/t3code-ce4259b3/results/sma8_16_kpis_results.md
+Wrote /home/adminodin/.t3/worktrees/prism/t3code-ce4259b3/results/sma8_16_kpis_monthly.md
+Wrote /home/adminodin/.t3/worktrees/prism/t3code-ce4259b3/results/sma8_16_kpis_monthly.csv

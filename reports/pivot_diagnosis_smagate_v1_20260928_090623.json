@@ -1,0 +1,39 @@
+{
+  "strategy_id": "smagate_v1",
+  "stagnation_detected": true,
+  "triggers_fired": [
+    {
+      "trigger": "tail_risk",
+      "severity": "high",
+      "evidence": {
+        "max_drawdown_pct": 59.3765,
+        "risk_mgmt_score": 0
+      },
+      "message": "Structural risk: max_drawdown_pct=59.3765% > 35%; Risk Management score=0 <= 5"
+    }
+  ],
+  "iteration_count": 1,
+  "score_trajectory": [
+    64
+  ],
+  "latest_eval_summary": {
+    "total_score": 64,
+    "verdict": "Refine",
+    "dimension_scores": {
+      "Sample Size": 8,
+      "Expectancy": 20,
+      "Risk Management": 0,
+      "Robustness": 16,
+      "Execution Realism": 20
+    },
+    "red_flag_ids": [
+      "excessive_drawdown"
+    ],
+    "expectancy": 13.601300000000002,
+    "profit_factor": 3.3852932665748887,
+    "max_drawdown_pct": 59.3765,
+    "slippage_tested": true
+  },
+  "recommendation": "pivot",
+  "diagnosed_at_utc": "2026-09-28T09:06:23+00:00"
+}

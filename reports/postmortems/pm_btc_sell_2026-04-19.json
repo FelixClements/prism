@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "postmortem_id": "pm_btc_sell_2026-04-19",
+  "signal_id": "btc_sell_2026-04-19",
+  "ticker": "BTC-USD",
+  "signal_date": "2026-04-19",
+  "source_skill": "smagate_v1_sell",
+  "predicted_direction": "SHORT",
+  "entry_price": 73823.14,
+  "realized_returns": {
+    "5d": 0.04928888150788491,
+    "20d": 0.09255661571696905
+  },
+  "exit_price": 77461.8,
+  "exit_date": "2026-04-24",
+  "holding_days": 5,
+  "outcome_category": "FALSE_POSITIVE_SEVERE",
+  "regime_at_signal": "UNKNOWN",
+  "regime_at_exit": "UNKNOWN",
+  "outcome_notes": "Sell fill. SHORT means the next 5 and 20 days should fall.",
+  "recorded_at": "2026-09-28T09:47:11.990356Z"
+}

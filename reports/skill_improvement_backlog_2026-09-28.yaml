@@ -1,0 +1,52 @@
+- skill: smagate_v1_buy
+  issue_type: overconfidence
+  severity: high
+  evidence:
+    severe_fp_rate: 0.436
+    severe_fp_count: 17
+    sample_size: 39
+  suggested_action: "Review confidence scoring; reduce position size or add confirmation filters"
+  priority_score: 2550
+  generated_by: signal-postmortem
+  generated_at: "2026-09-28T09:47:12.243564Z"
+  status: pending
+
+- skill: smagate_v1_sell
+  issue_type: overconfidence
+  severity: high
+  evidence:
+    severe_fp_rate: 0.368
+    severe_fp_count: 14
+    sample_size: 38
+  suggested_action: "Review confidence scoring; reduce position size or add confirmation filters"
+  priority_score: 2100
+  generated_by: signal-postmortem
+  generated_at: "2026-09-28T09:47:12.243564Z"
+  status: pending
+
+- skill: smagate_v1_buy
+  issue_type: false_positive_cluster
+  severity: high
+  evidence:
+    false_positive_rate: 0.513
+    sample_size: 39
+    regime_correlation: UNKNOWN
+  suggested_action: "Add regime filter or reduce confidence in UNKNOWN regime"
+  priority_score: 2000
+  generated_by: signal-postmortem
+  generated_at: "2026-09-28T09:47:12.243564Z"
+  status: pending
+
+- skill: smagate_v1_sell
+  issue_type: false_positive_cluster
+  severity: high
+  evidence:
+    false_positive_rate: 0.447
+    sample_size: 38
+    regime_correlation: UNKNOWN
+  suggested_action: "Add regime filter or reduce confidence in UNKNOWN regime"
+  priority_score: 1700
+  generated_by: signal-postmortem
+  generated_at: "2026-09-28T09:47:12.243564Z"
+  status: pending
+

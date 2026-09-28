@@ -1,0 +1,64 @@
+id: pivot_smagate_v1_inv_tail_risk_mean_reversion_pullback
+as_of: '2026-09-28'
+concept_id: coinbase_weekly_btc_sma_gate
+variant: research_probe
+name: Mean Reversion Pullback (pivoted from smagate_v1)
+hypothesis_type: mean_reversion
+mechanism_tag: statistical
+regime: Neutral
+export_ready_v1: false
+entry_family: research_only
+entry:
+  conditions:
+  - rsi_14 < 30
+  - price > sma_200
+  - price < sma_20
+  trend_filter:
+  - sma_50 > sma_200
+  note: Probe setup with small size for hypothesis validation.
+exit:
+  stop_loss_pct: 0.04
+  take_profit_rr: 2.0
+  time_stop_days: 7
+risk:
+  position_sizing: fixed_risk
+  risk_per_trade: 0.005
+  max_positions: 5
+  max_sector_exposure: 0.3
+  sector_group_by: sector
+validation_plan:
+  period: 2016-01-01 to latest
+  entry_timing: next_open
+  hold_days:
+  - 3
+  - 7
+  - 14
+  success_criteria:
+  - expected_value_after_costs > 0
+  - max_drawdown_pct < 25
+thesis: 'Weekly BTC-USD, all-in or cash. Enter when flat and the weekly close is above
+  the 8-week average. Exit when long and the weekly close is below the 16-week average.
+  No percent stop and no profit target. The catalog label trend_following_breakout
+  is only the nearest archetype bucket.
+
+  '
+invalidation_signals:
+- punished next-bar fill with 0.30% fee still draws down 59.4%
+pivot_metadata:
+  pivot_technique: assumption_inversion
+  source_strategy_id: smagate_v1
+  target_archetype: mean_reversion_pullback
+  what_changed:
+    signal: 'Inversion: risk -> tighten'
+    horizon: 112d -> 7d
+    risk: stop 0.594 -> 0.04
+  why: Reduce tail exposure
+  targeted_triggers:
+  - tail_risk
+  expected_failure_modes:
+  - Catching falling knives in trend changes
+  - Insufficient recovery within time stop
+  scores:
+    quality_potential: 0.75
+    novelty: 0.9091
+    combined: 0.8136

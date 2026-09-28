@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "postmortem_id": "pm_btc_buy_2022-11-06",
+  "signal_id": "btc_buy_2022-11-06",
+  "ticker": "BTC-USD",
+  "signal_date": "2022-11-06",
+  "source_skill": "smagate_v1_buy",
+  "predicted_direction": "LONG",
+  "entry_price": 20909.17,
+  "realized_returns": {
+    "5d": -0.18630820831242945,
+    "20d": -0.21321936738761027
+  },
+  "exit_price": 17013.62,
+  "exit_date": "2022-11-11",
+  "holding_days": 5,
+  "outcome_category": "FALSE_POSITIVE_SEVERE",
+  "regime_at_signal": "UNKNOWN",
+  "regime_at_exit": "UNKNOWN",
+  "outcome_notes": "Buy fill. LONG means the next 5 and 20 days should rise.",
+  "recorded_at": "2026-09-28T09:47:11.985851Z"
+}

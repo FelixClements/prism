@@ -1,0 +1,50 @@
+{
+  "total_score": 64,
+  "verdict": "Refine",
+  "dimensions": [
+    {
+      "name": "Sample Size",
+      "score": 8,
+      "max_score": 20
+    },
+    {
+      "name": "Expectancy",
+      "score": 20,
+      "max_score": 20
+    },
+    {
+      "name": "Risk Management",
+      "score": 0,
+      "max_score": 20
+    },
+    {
+      "name": "Robustness",
+      "score": 16,
+      "max_score": 20
+    },
+    {
+      "name": "Execution Realism",
+      "score": 20,
+      "max_score": 20
+    }
+  ],
+  "red_flags": [
+    {
+      "id": "excessive_drawdown",
+      "severity": "high",
+      "message": "Max drawdown 59.3765% exceeds 50% threshold — catastrophic risk."
+    }
+  ],
+  "profit_factor": 3.3852932665748887,
+  "expectancy": 13.601300000000002,
+  "inputs": {
+    "total_trades": 38,
+    "win_rate": 50.0,
+    "avg_win_pct": 38.6069,
+    "avg_loss_pct": 11.4043,
+    "max_drawdown_pct": 59.3765,
+    "years_tested": 8,
+    "num_parameters": 2,
+    "slippage_tested": true
+  }
+}

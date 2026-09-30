@@ -15,8 +15,8 @@ BLOCK_ORDER = (
     "sideways_quiet",
     "sideways_volatile",
 )
-QUIET_SHOCKS = (0.002, -0.001, -0.002, 0.001)
-LOUD_SHOCKS = (0.12, -0.06, -0.12, 0.06)
+QUIET_SHOCKS = (0.03, -0.02, 0.025, -0.035)
+LOUD_SHOCKS = (0.11, -0.07, 0.09, -0.13)
 MU = {"bull": 0.08, "bear": -0.09, "sideways": 0.0}
 
 

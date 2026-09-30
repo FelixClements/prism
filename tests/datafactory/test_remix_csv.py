@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from price_forecast.data.candles import Candle, read_candles, write_candles
-from price_forecast.remix.remix import main, remix_candle_paths, remix_daily_closes
+from price_forecast.datafactory.remix import main, remix_candle_paths, remix_daily_closes
 from price_forecast.data.candles import closes_from_candles
 
 
@@ -59,7 +59,7 @@ def test_main_writes_one_pair_per_path(tmp_path: Path, monkeypatch: pytest.Monke
     src = tmp_path / "src.csv"
     write_candles(src, _source())
     dest = tmp_path / "remix"
-    monkeypatch.setattr("price_forecast.remix.remix.REMIX_DIR", dest)
+    monkeypatch.setattr("price_forecast.datafactory.remix.REMIX_DIR", dest)
     monkeypatch.setattr(
         "price_forecast.data.series.urlopen",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network")),

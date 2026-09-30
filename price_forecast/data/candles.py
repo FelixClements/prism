@@ -17,6 +17,7 @@ from price_forecast.data.series import PriceSeries, fetch_coinbase_ohlc
 HEADER = ("time", "low", "high", "open", "close", "volume")
 BTC_USD_DAILY_CSV = Path(__file__).resolve().parents[2] / "data" / "btc-usd-daily.csv"
 REMIX_DIR = BTC_USD_DAILY_CSV.parent / "remix"
+SYNTHETIC_DIR = BTC_USD_DAILY_CSV.parent / "synthetic"
 COINBASE_START = date(2018, 1, 1)
 
 

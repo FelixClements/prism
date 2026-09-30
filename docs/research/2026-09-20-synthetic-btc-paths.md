@@ -5,7 +5,7 @@
 **Question:** How should Prism emit extra Bitcoin-like daily histories so a later run of the *already frozen* SMAGateV1 rule (SMA-8 in / SMA-16 out) can be stress-tested without retuning on one Coinbase path?  
 **This note is the spec for the history factory.** It does not pick a new SMA pair. It does not score 8/16 on remixed paths.
 
-**Code:** `python -m price_forecast.remix.remix` — `price_forecast/remix/remix.py`. Real tape: Coinbase BTC-USD daily closes via `load_daily_closes(source="coinbase")`. Weeks: existing `weekly_closes`.
+**Code:** `python -m price_forecast.datafactory.remix` — `price_forecast/datafactory/remix.py`. Real tape: Coinbase BTC-USD daily closes via `load_daily_closes(source="coinbase")`. Weeks: existing `weekly_closes`.
 
 ---
 
@@ -64,7 +64,7 @@ A later GARCH-t simulation (`arch_model.simulate`) is a valid **negative control
 
 ## What to do, in order
 
-1. **This job (done when `price_forecast/remix/remix.py` lands):** emit seeded `PriceSeries` paths; print a sanity comparison vs real and vs `mean_block_bars=1`. Do not retune 8/16.
+1. **This job (done when `price_forecast/datafactory/remix.py` lands):** emit seeded `PriceSeries` paths; print a sanity comparison vs real and vs `mean_block_bars=1`. Do not retune 8/16.
 2. **Next job (not this factory):** run SMAGateV1 vs buy-and-hold on N remixed paths. Publish the KPI *cloud* (median, 10th/90th of max DD and ending wealth vs hold). Full-path only. No new lookback.
 3. **Later, if that cloud is not a spike around the historical number:** optional GARCH-t negative control; then CSCV/PBO and DSR on the *real* trial matrix if anyone reopens a grid. Do not reopen a grid to make PBO look good.
 

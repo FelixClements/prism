@@ -151,7 +151,12 @@ def test_draw_writes_png(tmp_path: Path):
 def test_gitignore_lists_generated_candle_files():
     root = Path(__file__).resolve().parents[2]
     lines = (root / ".gitignore").read_text(encoding="utf-8").splitlines()
-    for line in ("data/btc-usd-daily.csv", "data/btc-usd-daily.png", "data/remix/"):
+    for line in (
+        "data/btc-usd-daily.csv",
+        "data/btc-usd-daily.png",
+        "data/remix/",
+        "data/synthetic/",
+    ):
         assert line in lines
 
 

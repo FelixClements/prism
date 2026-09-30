@@ -1,0 +1,1 @@
+"""Synthetic regime candle factory."""

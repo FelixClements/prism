@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
 import pytest
 
-from price_forecast.data.candles import write_candles
+from price_forecast.data.candles import read_candles, write_candles
 from price_forecast.datafactory.synthetic.__main__ import main
+from price_forecast.datafactory.synthetic.fit import fit_tape
+from price_forecast.datafactory.synthetic.label import label_candles
+from price_forecast.datafactory.synthetic.paths import synthetic_paths
 from tests.datafactory.fixture import balanced_tape
 
 
@@ -37,10 +41,24 @@ def test_command_writes_candle_png_and_sidecar(tmp_path, monkeypatch):
     assert stem.with_suffix(".csv").is_file()
     assert stem.with_suffix(".png").read_bytes().startswith(b"\x89PNG")
     sidecar = dest / "btc-usd-daily-seed3-path0-regimes.csv"
-    text = sidecar.read_text(encoding="utf-8").splitlines()
-    assert text[0] == "time,regime"
     assert sidecar.with_suffix(".png").exists() is False
-    assert len(text) == len(balanced_tape()) + 1
+    source_candles = read_candles(source)
+    labeling = label_candles(source_candles, trend_bars=4, vol_bars=2)
+    model = fit_tape(source_candles, labeling)
+    path = synthetic_paths(source_candles, model, n_paths=1, seed=3)[0]
+    with stem.with_suffix(".csv").open(newline="", encoding="utf-8") as handle:
+        times = [row["time"] for row in csv.DictReader(handle)]
+    expected_rows = [
+        [day, regime]
+        for day, regime in zip(
+            [candle.day.isoformat() for candle in path.candles],
+            path.regimes,
+        )
+    ]
+    assert times == [row[0] for row in expected_rows]
+    with sidecar.open(newline="", encoding="utf-8") as handle:
+        sidecar_rows = list(csv.reader(handle))
+    assert sidecar_rows == [["time", "regime"]] + expected_rows
     assert sorted(path.name for path in dest.iterdir()) == [
         "btc-usd-daily-seed3-path0-regimes.csv",
         "btc-usd-daily-seed3-path0.csv",
@@ -106,4 +124,4 @@ def test_non_finite_return_writes_nothing(tmp_path, monkeypatch):
     )
     with pytest.raises(ValueError, match="non-finite"):
         main(["--csv", str(source), "--n-paths", "2"])
-    assert list(dest.glob("*")) == []
+    assert dest.exists() is False

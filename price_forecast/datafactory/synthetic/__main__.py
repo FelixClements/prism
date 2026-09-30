@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 from pathlib import Path
 from typing import Sequence
 
@@ -30,11 +31,18 @@ from price_forecast.datafactory.synthetic.report import (
 def write_regimes(path: Path, days: Sequence[str], regimes: Sequence[str]) -> None:
     if len(days) != len(regimes):
         raise ValueError("regime rows must align with candles")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(("time", "regime"))
-        writer.writerows(zip(days, regimes))
+    dest = Path(path)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    csv_tmp = dest.with_name(dest.name + ".tmp")
+    try:
+        with csv_tmp.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle, lineterminator="\n")
+            writer.writerow(("time", "regime"))
+            writer.writerows(zip(days, regimes))
+        os.replace(csv_tmp, dest)
+    except Exception:
+        csv_tmp.unlink(missing_ok=True)
+        raise
 
 
 def main(argv: Sequence[str] | None = None) -> None:

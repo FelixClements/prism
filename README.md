@@ -8,7 +8,7 @@ Walk-forward scoreboard for short-horizon Bitcoin forecasts. The weekly SMAGateV
 - `price_forecast/forecast/` — walk-forward harness, predictors, Chronos, bakeoff CLI
 - `price_forecast/strategies/` — SMA signals and SMAGateV1
 - `price_forecast/backtest/` — SMAGate simulator/KPIs and the archived t+1 engine
-- `price_forecast/datafactory/` — stationary-bootstrap path factory
+- `price_forecast/datafactory/` — remix and the synthetic regime factory
 - `results/` — live scoreboards (markdown/CSV)
 - `docs/` — architecture blueprint and research notes
 - `archive/frozen_t1_bakeoff/` — frozen t+1 SMA bakeoff. Do not use it for new work.
@@ -32,6 +32,12 @@ Stationary-bootstrap path factory:
 
 ```
 python -m price_forecast.datafactory.remix
+```
+
+Synthetic regime path factory:
+
+```
+python -m price_forecast.datafactory.synthetic
 ```
 
 Architecture blueprint: `docs/architecture.md`.

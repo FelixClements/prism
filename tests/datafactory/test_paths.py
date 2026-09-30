@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from datetime import timedelta
 
 import pytest
 
@@ -47,6 +48,96 @@ def _long_chapter() -> tuple[tuple[Candle, ...], TapeModel]:
     model = RegimeModel(8.0, 0.0, 0.01, (10_000,), ("bull_quiet",), (shape,))
     tape = TapeModel((("bull_quiet", 10_000),), {"bull_quiet": model})
     return candles, tape
+
+
+def test_invented_day_opens_where_the_previous_day_closed(monkeypatch):
+    _, path = _path_with_shocks(monkeypatch, [0.01])
+    for index in range(1, len(path.candles)):
+        prev = path.candles[index - 1]
+        candle = path.candles[index]
+        assert candle.open == pytest.approx(prev.close)
+        assert candle.low <= prev.high
+        assert candle.high >= prev.low
+
+
+def test_a_strong_bull_center_is_pulled_toward_the_source_climb(monkeypatch):
+    candles = candles_from_closes([100.0 + index for index in range(20)])
+    shape = BarShape(0.995, 1.01, 0.99, 1.0)
+    model = RegimeModel(8.0, 0.05, 0.01, (10_000,), ("bull_quiet",), (shape,))
+    tape = TapeModel((("bull_quiet", 10_000),), {"bull_quiet": model})
+
+    def fake_rvs(*args, **kwargs):
+        return kwargs["loc"]
+
+    monkeypatch.setattr(
+        "price_forecast.datafactory.synthetic.paths.t.rvs",
+        fake_rvs,
+    )
+    path = synthetic_paths(candles, tape, n_paths=1, seed=0)[0]
+    returns = [
+        math.log(path.candles[index].close / path.candles[index - 1].close)
+        for index in range(1, len(path.candles))
+    ]
+    target = math.log(candles[-1].close / candles[0].close) / (len(candles) - 1)
+    assert sum(returns) / len(returns) == pytest.approx(target)
+    assert abs(sum(returns) / len(returns)) < 0.02
+
+
+def test_a_draw_past_20_percent_is_spread_over_days_that_stay_within_20(monkeypatch):
+    candles, path = _path_with_shocks(monkeypatch, [math.log(1.40)])
+    steps = [
+        path.candles[index].close / path.candles[index - 1].close - 1.0
+        for index in range(1, len(path.candles))
+    ]
+    assert all(abs(step) <= 0.20 + 1e-9 for step in steps)
+    burst = []
+    for step in steps:
+        if step == pytest.approx(0.0):
+            break
+        burst.append(1.0 + step)
+    assert len(burst) >= 2
+    assert math.prod(burst) == pytest.approx(1.40)
+    for index in range(1, len(burst) + 1):
+        assert path.regimes[index] == "bull_quiet"
+        assert path.candles[index].day == candles[0].day + timedelta(days=index)
+
+
+def test_a_20_percent_draw_stays_one_day_and_a_drop_past_20_percent_is_spread(monkeypatch):
+    candles, flat = _path_with_shocks(monkeypatch, [math.log(1.20)])
+    assert flat.candles[1].close == pytest.approx(candles[0].close * 1.20)
+    assert len(flat.candles) == len(candles)
+
+    _, dropped = _path_with_shocks(monkeypatch, [math.log(0.60)])
+    steps = [
+        dropped.candles[index].close / dropped.candles[index - 1].close - 1.0
+        for index in range(1, len(dropped.candles))
+    ]
+    burst = []
+    for step in steps:
+        if step == pytest.approx(0.0):
+            break
+        assert step >= -0.20 - 1e-9
+        burst.append(1.0 + step)
+    assert len(burst) >= 2
+    assert math.prod(burst) == pytest.approx(0.60)
+
+
+def _path_with_shocks(monkeypatch, shocks: list[float]):
+    candles, tape = _long_chapter()
+    pending = iter(shocks)
+
+    def fake_rvs(*args, **kwargs):
+        try:
+            return next(pending)
+        except StopIteration:
+            return 0.0
+
+    monkeypatch.setattr(
+        "price_forecast.datafactory.synthetic.paths.t.rvs",
+        fake_rvs,
+    )
+    path = synthetic_paths(candles, tape, n_paths=1, seed=0)[0]
+    return candles, path
 
 
 def test_row_zero_is_the_source_and_a_long_chapter_is_cut_to_the_file():
@@ -117,8 +208,13 @@ def test_control_uses_the_other_stream_and_keeps_row_zero():
     labeling = label_candles(candles, trend_bars=4, vol_bars=2)
     control = control_paths(candles, labeling, n_paths=1, seed=0)[0]
     assert control[0] == candles[0]
-    assert len(control) == len(candles)
+    assert len(control) >= len(candles)
     assert control[1].close != candles[1].close
+    for index in range(1, len(control)):
+        assert control[index].open == pytest.approx(control[index - 1].close)
+    for index in range(1, len(control)):
+        step = control[index].close / control[index - 1].close - 1.0
+        assert abs(step) <= 0.20 + 1e-9
 
 
 def _std(values: list[float]) -> float:

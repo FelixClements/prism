@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from price_forecast.data.candles import Candle, write_candles
-from price_forecast.remix.remix import (
+from price_forecast.datafactory.remix import (
     MEAN_BLOCK_BARS,
     main,
     remix_daily_closes,
@@ -128,7 +128,7 @@ def test_main_prints_sanity_without_network(
             for close in (series.close_at(day),)
         ),
     )
-    monkeypatch.setattr("price_forecast.remix.remix.REMIX_DIR", tmp_path / "remix")
+    monkeypatch.setattr("price_forecast.datafactory.remix.REMIX_DIR", tmp_path / "remix")
     main(["--csv", str(src), "--n-paths", "2", "--seed", "0", "--mean-block-bars", "40"])
     out = capsys.readouterr().out
     assert "hodl_max_dd" in out

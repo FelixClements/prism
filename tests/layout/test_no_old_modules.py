@@ -14,6 +14,8 @@ FORBIDDEN = (
     "from price_forecast.chronos import",
     "from price_forecast.bakeoff import",
     "from price_forecast.remix import",
+    "from price_forecast.remix.remix import",
+    "python -m price_forecast.remix.remix",
     "from price_forecast.archive",
     "import price_forecast.weekly_regime",
     "import price_forecast.sma8_16_kpis",

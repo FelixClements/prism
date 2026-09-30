@@ -1,7 +1,7 @@
 """Stationary-bootstrap remixed daily BTC closes.
 
 Usage:
-    python -m price_forecast.remix.remix
+    python -m price_forecast.datafactory.remix
 
 History factory for a later SMAGateV1 stress test. Not a new trading rule.
 Remixing this Coinbase return process does not undo having picked SMA-8/16

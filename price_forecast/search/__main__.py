@@ -11,6 +11,7 @@ import numpy as np
 
 from price_forecast.data.candles import BTC_USD_DAILY_CSV, read_candles
 from price_forecast.search.ledger import (
+    _replace,
     append_jsonl,
     champion_of,
     insert_member,
@@ -356,7 +357,7 @@ def _replace_seed_line(path: Path, row: dict) -> None:
     text = "\n".join(out)
     if text:
         text += "\n"
-    path.write_text(text, encoding="utf-8")
+    _replace(path, text)
 
 
 def _member_from_row(row: dict) -> dict:

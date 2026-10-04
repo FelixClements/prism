@@ -1,6 +1,9 @@
 import json
+import os
 from datetime import date, timedelta
 from pathlib import Path
+
+import pytest
 
 from price_forecast.data.candles import Candle, write_candles
 from price_forecast.search import __main__ as search_main
@@ -294,3 +297,36 @@ def test_existing_seed_line_is_not_written_twice(monkeypatch, tmp_path):
     pool = json.loads((results / "pool.json").read_text(encoding="utf-8"))
     assert len(pool["members"]) == 1
     assert pool["members"][0]["id"] == "seed"
+
+
+def test_seed_rewrite_leaves_the_ledger_intact_when_replace_fails(monkeypatch, tmp_path):
+    ledger = tmp_path / "ledger.jsonl"
+    original = b'{"id": "seed"}\n{"id": "c0"}\n'
+    ledger.write_bytes(original)
+    metrics = _canned_metrics()
+    row = {
+        "baseline": {},
+        "breeding_number": 1.5,
+        "coinbase": {},
+        "coinbase_edge": metrics.edge,
+        "cycle": -1,
+        "fragile": False,
+        "id": "seed",
+        "parent_id": None,
+        "remix_mean_edge": None,
+        "round_trips": metrics.round_trips,
+        "skill_warnings": {},
+        "spec": spec_to_mapping(locked_crashgate()),
+        "status": "ok",
+        "stress_pass": False,
+        "synthetic_mean_edge": None,
+        "trial_count": 0,
+    }
+
+    def fail_replace(*_args, **_kwargs):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(os, "replace", fail_replace)
+    with pytest.raises(OSError, match="replace failed"):
+        search_main._replace_seed_line(ledger, row)
+    assert ledger.read_bytes() == original

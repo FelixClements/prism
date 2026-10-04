@@ -58,9 +58,10 @@ class BaseBreakoutGate:
             )
         )
         self._index = {bar["date"]: i for i, bar in enumerate(self._history)}
-        self._cache: dict[date, bool] = {}
+        self._cache: dict[date, tuple[bool, bool]] = {}
 
-    def __call__(self, day: date) -> bool:
+    def parts(self, day: date) -> tuple[bool, bool]:
+        """`(base_or_breakout, above_long_averages)` for one session."""
         cached = self._cache.get(day)
         if cached is not None:
             return cached
@@ -72,6 +73,10 @@ class BaseBreakoutGate:
         above_long = result["trend_template"]["criteria"].get(
             "c1_price_above_sma150_200", {}
         ).get("passed")
-        allowed = result.get("execution_state") in ENTRY_STATES and bool(above_long)
-        self._cache[day] = allowed
-        return allowed
+        pair = (result.get("execution_state") in ENTRY_STATES, bool(above_long))
+        self._cache[day] = pair
+        return pair
+
+    def __call__(self, day: date) -> bool:
+        base, long = self.parts(day)
+        return base and long

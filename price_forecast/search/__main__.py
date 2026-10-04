@@ -247,12 +247,7 @@ def _score_child(coinbase_candles, stress_candles, spec, _gate, baseline: PathMe
         coinbase = score_file(coinbase_candles, spec, gate_for(coinbase_candles))
     except Exception as exc:
         return {"status": "error", "error": str(exc), "stress_pass": False, "fragile": False, "round_trips": 0}
-    if (
-        not baseline_is_usable(coinbase)
-        or coinbase.round_trips == 0
-        or coinbase.sharpe is None
-        or coinbase.profit_factor is None
-    ):
+    if coinbase.round_trips == 0 or coinbase.sharpe is None or coinbase.profit_factor is None:
         return {
             "status": "error",
             "error": "unusable coinbase metrics",

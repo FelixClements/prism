@@ -27,6 +27,18 @@ def test_failed_stress_does_not_enter():
     assert [item["id"] for item in insert_member(pool, child)] == ["seed"]
 
 
+def test_tied_weakest_keeps_the_older_member():
+    members = [
+        _member("seed", 4, -1),
+        _member("cycle5", 4, 5),
+        _member("strong", 6, 1),
+    ]
+    candidate = _member("child", 4.1, 6)
+    ids = [item["id"] for item in insert_member(members, candidate, cap=3)]
+    assert "seed" in ids
+    assert "cycle5" not in ids
+
+
 def test_tie_keeps_the_older_member_and_the_higher_number_replaces_the_weakest():
     members = [_member("a", 5.0, 0), _member("b", 4.0, 1)]
     tied = _member("c", 4.0, 2)

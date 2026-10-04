@@ -49,11 +49,11 @@ def insert_member(members: list[dict], candidate: dict, *, cap: int = 20, seed: 
     weakest = min(member["breeding_number"] for member in members)
     if candidate["breeding_number"] <= weakest:
         return list(members)
-    oldest = min(
+    newest = max(
         (member for member in members if member["breeding_number"] == weakest),
         key=lambda member: member["inserted_cycle"],
     )
-    return [member for member in members if member["id"] != oldest["id"]] + [candidate]
+    return [member for member in members if member["id"] != newest["id"]] + [candidate]
 
 
 def champion_of(members: list[dict]) -> dict:

@@ -7,6 +7,7 @@ import pytest
 
 from price_forecast.data.candles import Candle, write_candles
 from price_forecast.search import __main__ as search_main
+from price_forecast.search.ledger import insert_member
 from price_forecast.search.score import PathMetrics
 from price_forecast.search.spec import locked_crashgate, spec_to_mapping
 
@@ -122,6 +123,47 @@ def test_gate_for_remembers_the_checker_for_one_file():
     third = search_main.gate_for(other)
     assert first is second
     assert first is not third
+
+
+def test_zero_drawdown_child_stays_scored(monkeypatch):
+    canned = _canned_metrics()
+    zero_drawdown = PathMetrics(
+        total_return=canned.total_return,
+        edge=0.4,
+        sharpe=1,
+        max_drawdown=0,
+        win_rate=canned.win_rate,
+        profit_factor=0,
+        round_trips=4,
+        end_dollars=canned.end_dollars,
+        start_dollars=canned.start_dollars,
+        trip_pnls=canned.trip_pnls,
+        hodl_return=canned.hodl_return,
+    )
+
+    def every_file(*_args, **_kwargs):
+        return zero_drawdown
+
+    monkeypatch.setattr(search_main, "score_file", every_file)
+    result = search_main._score_child(
+        [object()],
+        {"remix": [[object()]], "synthetic": [[object()]]},
+        locked_crashgate(),
+        object(),
+        canned,
+    )
+    assert result["status"] == "ok"
+    assert isinstance(result["breeding_number"], (int, float))
+    assert result["stress_pass"] is True
+    child = {
+        "id": "child",
+        "breeding_number": result["breeding_number"],
+        "inserted_cycle": 1,
+        "coinbase_edge": result["coinbase_edge"],
+        "stress_pass": True,
+        "fragile": False,
+    }
+    assert "child" in [item["id"] for item in insert_member([], child)]
 
 
 def test_stress_files_use_their_own_gate(monkeypatch):

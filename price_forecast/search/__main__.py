@@ -104,7 +104,14 @@ def build_synthetic(coinbase: Path, count: int) -> None:
     )
 
 
+_gate_checkers: dict[int, object] = {}
+
+
 def gate_for(candles):
+    key = id(candles)
+    remembered = _gate_checkers.get(key)
+    if remembered is not None:
+        return remembered
     cached = {}
 
     def _gate(day):
@@ -114,6 +121,7 @@ def gate_for(candles):
             cached["gate"] = box
         return box.parts(day)
 
+    _gate_checkers[key] = _gate
     return _gate
 
 
@@ -173,6 +181,7 @@ def pivot_runner(results: Path, champion_spec) -> dict:
         encoding="utf-8",
     )
     script = Path.home() / ".agents" / "skills" / "strategy-pivot-designer" / "scripts" / "generate_pivots.py"
+    before = {path.name for path in dest.glob("pivot_manifest_*.json")}
     try:
         subprocess.run(
             [
@@ -189,14 +198,23 @@ def pivot_runner(results: Path, champion_spec) -> dict:
             ],
             check=True,
         )
-        written = (
-            path
-            for path in sorted(dest.rglob("*.yaml"))
-            if path.name != "champion_draft.yaml" and not path.name.startswith("ticket_")
-        )
-        chosen = next(written)
-    except (subprocess.CalledProcessError, StopIteration) as exc:
+    except subprocess.CalledProcessError as exc:
         raise Unmapped("pivot script failed") from exc
+    new_names = sorted(
+        path.name for path in dest.glob("pivot_manifest_*.json") if path.name not in before
+    )
+    if not new_names:
+        raise Unmapped("pivot script failed")
+    try:
+        manifest = json.loads((dest / new_names[-1]).read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise Unmapped("pivot script failed") from exc
+    drafts = manifest.get("drafts") if isinstance(manifest, dict) else None
+    if not isinstance(drafts, list) or not drafts or not isinstance(drafts[0], dict):
+        raise Unmapped("pivot script failed")
+    chosen = dest / str(drafts[0].get("path", ""))
+    if not chosen.is_file():
+        raise Unmapped("pivot script failed")
     loaded = _load_yaml(chosen)
     if not isinstance(loaded, dict):
         raise Unmapped("pivot script failed")
@@ -223,9 +241,9 @@ def _safe_warnings(metrics: PathMetrics) -> dict:
         return {"skill_error": str(exc)}
 
 
-def _score_child(coinbase_candles, stress_candles, spec, gate, baseline: PathMetrics) -> dict:
+def _score_child(coinbase_candles, stress_candles, spec, _gate, baseline: PathMetrics) -> dict:
     try:
-        coinbase = score_file(coinbase_candles, spec, gate)
+        coinbase = score_file(coinbase_candles, spec, gate_for(coinbase_candles))
     except Exception as exc:
         return {"status": "error", "error": str(exc), "stress_pass": False, "fragile": False, "round_trips": 0}
     if (
@@ -261,9 +279,9 @@ def _score_child(coinbase_candles, stress_candles, spec, gate, baseline: PathMet
     synthetic_edges = []
     try:
         for candles in stress_candles["remix"]:
-            remix_edges.append(score_file(candles, spec, gate).edge)
+            remix_edges.append(score_file(candles, spec, gate_for(candles)).edge)
         for candles in stress_candles["synthetic"]:
-            synthetic_edges.append(score_file(candles, spec, gate).edge)
+            synthetic_edges.append(score_file(candles, spec, gate_for(candles)).edge)
     except Exception as exc:
         return {
             "status": "error",
@@ -286,6 +304,59 @@ def _score_child(coinbase_candles, stress_candles, spec, gate, baseline: PathMet
         "coinbase_edge": coinbase.edge,
         "skill_warnings": _safe_warnings(coinbase),
     }
+
+
+def _complete_seed_row(baseline: PathMetrics) -> dict:
+    return {
+        "status": "ok",
+        "id": "seed",
+        "parent_id": None,
+        "cycle": -1,
+        "trial_count": 0,
+        "spec": spec_to_mapping(locked_crashgate()),
+        "breeding_number": breeding_number(baseline, baseline),
+        "coinbase_edge": baseline.edge,
+        "remix_mean_edge": None,
+        "synthetic_mean_edge": None,
+        "stress_pass": False,
+        "fragile": is_fragile(baseline),
+        "round_trips": baseline.round_trips,
+        "coinbase": _metrics_dict(baseline),
+        "baseline": _metrics_dict(baseline),
+        "skill_warnings": _safe_warnings(baseline),
+    }
+
+
+def _ledger_seed(path: Path) -> dict | None:
+    if not path.is_file():
+        return None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("id") == "seed":
+            return row
+    return None
+
+
+def _seed_is_reusable(row: dict) -> bool:
+    return row.get("breeding_number") is not None and row.get("coinbase_edge") is not None
+
+
+def _replace_seed_line(path: Path, row: dict) -> None:
+    original = path.read_text(encoding="utf-8")
+    replaced = False
+    out = []
+    for line in original.splitlines():
+        if not replaced and line.strip() and json.loads(line).get("id") == "seed":
+            out.append(json.dumps(row, sort_keys=True))
+            replaced = True
+            continue
+        out.append(line)
+    text = "\n".join(out)
+    if text:
+        text += "\n"
+    path.write_text(text, encoding="utf-8")
 
 
 def _member_from_row(row: dict) -> dict:
@@ -331,6 +402,7 @@ def main(argv: list[str] | None = None) -> int:
 
     coinbase_candles = read_candles(coinbase_path)
     gate = gate_for(coinbase_candles)
+    stress = _load_stress(remix_dir, synthetic_dir, args.path_count)
     pool_path = results / "pool.json"
     ledger_path = results / "ledger.jsonl"
     side_path = results / "side_pile.jsonl"
@@ -339,25 +411,38 @@ def main(argv: list[str] | None = None) -> int:
         baseline = score_file(coinbase_candles, locked_crashgate(), gate)
         if not baseline_is_usable(baseline):
             return 1
-        stress = _load_stress(remix_dir, synthetic_dir, args.path_count)
-        scored = _score_child(coinbase_candles, stress, locked_crashgate(), gate, baseline)
-        scored.update(
-            {
-                "id": "seed",
-                "parent_id": None,
-                "cycle": -1,
-                "spec": spec_to_mapping(locked_crashgate()),
-                "trial_count": 0,
-                "status": "ok",
-            }
-        )
-        append_jsonl(ledger_path, scored)
-        member = _member_from_row(scored)
+        existing_seed = _ledger_seed(ledger_path)
+        if existing_seed is not None:
+            if _seed_is_reusable(existing_seed):
+                member = _member_from_row(existing_seed)
+            else:
+                row = _complete_seed_row(baseline)
+                _replace_seed_line(ledger_path, row)
+                member = _member_from_row(row)
+        else:
+            scored = _score_child(coinbase_candles, stress, locked_crashgate(), gate, baseline)
+            if scored.get("status") != "ok" or "breeding_number" not in scored:
+                row = _complete_seed_row(baseline)
+            else:
+                scored.update(
+                    {
+                        "id": "seed",
+                        "parent_id": None,
+                        "cycle": -1,
+                        "spec": spec_to_mapping(locked_crashgate()),
+                        "trial_count": 0,
+                        "status": "ok",
+                    }
+                )
+                row = scored
+            append_jsonl(ledger_path, row)
+            member = _member_from_row(row)
         pool = {
             "members": insert_member([], member, seed=True),
             "champion_id": "seed",
             "stall": 0,
             "trial_count": 0,
+            "next_cycle": 0,
         }
         save_pool(pool_path, pool)
         baseline_metrics = baseline
@@ -385,6 +470,11 @@ def main(argv: list[str] | None = None) -> int:
 
     def run_cycle(cycle: int) -> None:
         nonlocal pool
+
+        def save_cycle() -> None:
+            pool["next_cycle"] = cycle + 1
+            save_pool(pool_path, pool)
+
         members = pool["members"]
         champion = champion_of(members)
         previous = champion["breeding_number"]
@@ -399,7 +489,7 @@ def main(argv: list[str] | None = None) -> int:
             except Unmapped as exc:
                 append_side_pile(side_path, draft_id=str(champion["id"]), phrase=exc.phrase)
                 pool["stall"] = 0
-                save_pool(pool_path, pool)
+                save_cycle()
                 return
             pool["stall"] = 0
             stall = 0
@@ -408,7 +498,6 @@ def main(argv: list[str] | None = None) -> int:
             parent = members[int(picker.integers(0, len(members)))]
             parent_id = parent["id"]
             child_spec = mutate(parent_spec(parent), run_seed=args.run_seed, cycle=cycle)
-        stress = _load_stress(remix_dir, synthetic_dir, args.path_count)
         scored = _score_child(coinbase_candles, stress, child_spec, gate, baseline_metrics)
         status = scored["status"]
         if status == "ok":
@@ -431,17 +520,18 @@ def main(argv: list[str] | None = None) -> int:
             pool["stall"] = 0 if current["breeding_number"] > previous else stall + 1
         else:
             pool["stall"] = stall + 1
-        save_pool(pool_path, pool)
+        save_cycle()
 
     cycles = args.cycles
+    start = int(pool.get("next_cycle", 0))
     try:
         if cycles is None:
-            cycle = 0
+            cycle = start
             while True:
                 run_cycle(cycle)
                 cycle += 1
         else:
-            for cycle in range(cycles):
+            for cycle in range(start, start + cycles):
                 run_cycle(cycle)
     except KeyboardInterrupt:
         return 0

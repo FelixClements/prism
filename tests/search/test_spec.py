@@ -1,6 +1,6 @@
 import pytest
 
-from price_forecast.search.spec import locked_crashgate, spec_from_mapping, spec_to_mapping
+from price_forecast.search.spec import locked_crashgate, needs_volume, spec_from_mapping, spec_to_mapping
 
 
 def test_locked_rule_fields():
@@ -45,6 +45,46 @@ def test_down_week_without_an_average_is_rejected():
                 "down_week": 0.10,
             }
         )
+
+
+def _rsi(period: int, level: int) -> dict:
+    return {
+        "mode": "indicator",
+        "conditions": [
+            {"left": "rsi", "args": [period], "op": "<", "right": {"value": level}},
+        ],
+        "base_or_breakout": False,
+        "above_long_averages": False,
+    }
+
+
+def test_indicator_rsi_round_trip():
+    data = _rsi(21, 25)
+    assert spec_to_mapping(spec_from_mapping(data)) == data
+
+
+def test_indicator_rejects_a_period_of_one_and_a_level_of_120():
+    with pytest.raises(ValueError, match="period"):
+        spec_from_mapping(_rsi(1, 25))
+    with pytest.raises(ValueError, match="level"):
+        spec_from_mapping(_rsi(14, 120))
+
+
+def test_obv_needs_volume_and_rsi_does_not():
+    rsi = spec_from_mapping(_rsi(21, 25))
+    obv = spec_from_mapping(
+        {
+            "mode": "indicator",
+            "conditions": [
+                {"left": "obv", "args": [], "op": ">", "right": {"series": "obv_sma", "args": [20]}},
+            ],
+            "base_or_breakout": False,
+            "above_long_averages": False,
+        }
+    )
+    assert needs_volume(rsi) is False
+    assert needs_volume(obv) is True
+    assert needs_volume(locked_crashgate()) is False
 
 
 def test_threshold_needs_an_entry_and_an_exit():

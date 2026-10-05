@@ -48,7 +48,59 @@ def _keep(spec: Spec) -> Spec | None:
         return None
 
 
+def _numeric_neighbors(series: str, arg_index: int, value: int | float, *, is_value: bool) -> list[int | float]:
+    if is_value and series == "rel_volume":
+        step = 0.1
+    elif (not is_value) and series in {"bb_upper", "bb_mid", "bb_lower"} and arg_index == 1:
+        step = 0.5
+    else:
+        step = 1.0
+    found: list[int | float] = []
+    for direction in (-1, 1):
+        nxt = round(float(value) + direction * step, 10)
+        if float(nxt).is_integer():
+            nxt = int(nxt)
+        found.append(nxt)
+    return found
+
+
+def _swap_condition(parent: Spec, index: int, condition) -> Spec:
+    conditions = list(parent.conditions)
+    conditions[index] = condition
+    return replace(parent, conditions=tuple(conditions))
+
+
+def _indicator_edits(parent: Spec) -> list[Spec]:
+    found: list[Spec] = []
+    for index, condition in enumerate(parent.conditions):
+        for arg_index, value in enumerate(condition.args):
+            for nxt in _numeric_neighbors(condition.left, arg_index, value, is_value=False):
+                args = list(condition.args)
+                args[arg_index] = nxt
+                found.append(_swap_condition(parent, index, replace(condition, args=tuple(args))))
+        for arg_index, value in enumerate(condition.right_args):
+            series = condition.right_series or condition.left
+            for nxt in _numeric_neighbors(series, arg_index, value, is_value=False):
+                args = list(condition.right_args)
+                args[arg_index] = nxt
+                found.append(_swap_condition(parent, index, replace(condition, right_args=tuple(args))))
+        if condition.right_value is not None:
+            for nxt in _numeric_neighbors(condition.left, 0, condition.right_value, is_value=True):
+                found.append(_swap_condition(parent, index, replace(condition, right_value=nxt)))
+    valid: list[Spec] = []
+    for spec in found:
+        kept = _keep(spec)
+        if kept is not None:
+            valid.append(kept)
+    return valid
+
+
 def legal_edits(parent: Spec) -> list[Spec]:
+    if parent.mode == "indicator":
+        valid = _indicator_edits(parent)
+        if not valid:
+            raise RuntimeError("no legal edit")
+        return valid
     found: list[Spec] = []
     for mode in ("threshold", "dual_average", "prior_high"):
         if mode != parent.mode:

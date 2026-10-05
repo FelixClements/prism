@@ -106,10 +106,17 @@ def is_fragile(metrics: PathMetrics) -> bool:
 
 
 def stress_result(
-    coinbase_edge: float, remix_edges: list[float], synthetic_edges: list[float]
-) -> tuple[bool, float, float]:
-    remix_mean = sum(remix_edges) / len(remix_edges)
+    coinbase_edge: float,
+    remix_edges: list[float],
+    synthetic_edges: list[float],
+    *,
+    require_remix: bool = True,
+) -> tuple[bool, float | None, float]:
     synthetic_mean = sum(synthetic_edges) / len(synthetic_edges)
+    if not require_remix:
+        passed = coinbase_edge > 0.0 and synthetic_mean >= 0.5 * coinbase_edge
+        return passed, None, synthetic_mean
+    remix_mean = sum(remix_edges) / len(remix_edges)
     passed = coinbase_edge > 0.0 and remix_mean >= 0.5 * coinbase_edge and synthetic_mean >= 0.5 * coinbase_edge
     return passed, remix_mean, synthetic_mean
 

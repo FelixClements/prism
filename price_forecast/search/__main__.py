@@ -163,7 +163,14 @@ def pivot_runner(results: Path, champion_spec) -> dict:
     dest.mkdir(parents=True, exist_ok=True)
     draft_path = dest / "champion_draft.yaml"
     diagnosis_path = dest / "diagnosis.json"
-    draft_path.write_text(_dump_yaml(spec_to_mapping(champion_spec)), encoding="utf-8")
+    draft = {
+        "id": "crashgate_search",
+        "hypothesis_type": "breakout",
+        "mechanism_tag": "behavior",
+        "entry_family": "pivot_breakout",
+    }
+    draft.update(spec_to_mapping(champion_spec))
+    draft_path.write_text(_dump_yaml(draft), encoding="utf-8")
     diagnosis_path.write_text(
         json.dumps(
             {
@@ -172,7 +179,7 @@ def pivot_runner(results: Path, champion_spec) -> dict:
                 "score_trajectory": [],
                 "triggers_fired": [
                     {
-                        "trigger": "plateau",
+                        "trigger": "improvement_plateau",
                         "severity": "medium",
                         "message": "champion breeding number did not rise for 50 cycles",
                     }

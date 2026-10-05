@@ -40,6 +40,16 @@ def test_shallower_drawdown_raises_the_drawdown_ratio():
     assert breeding_number(child, baseline) == pytest.approx(7.0)
 
 
+def test_volume_stress_leaves_remix_blank_and_uses_synthetic():
+    passed, remix_mean, synthetic_mean = stress_result(1.0, [], [0.5, 0.5], require_remix=False)
+    assert passed is True
+    assert remix_mean is None
+    assert synthetic_mean == pytest.approx(0.5)
+    passed, remix_mean, _ = stress_result(1.0, [], [0.4, 0.4], require_remix=False)
+    assert passed is False
+    assert remix_mean is None
+
+
 def test_stress_fails_when_either_family_is_under_half():
     passed, remix_mean, synthetic_mean = stress_result(1.0, [0.4, 0.4], [0.6, 0.6])
     assert passed is False

@@ -17,8 +17,47 @@ _THRESHOLD_KEYS = {
     "close_below_sma_weeks",
     "down_week",
 }
+_INDICATOR_KEYS = {"mode", "conditions", "base_or_breakout", "above_long_averages"}
+_OPS = {">", ">=", "<", "<="}
+_SERIES_ARITY = {
+    "close": 0,
+    "sma": 1,
+    "ema": 1,
+    "rsi": 1,
+    "macd": 2,
+    "macd_signal": 3,
+    "macd_hist": 3,
+    "bb_upper": 2,
+    "bb_mid": 2,
+    "bb_lower": 2,
+    "atr": 1,
+    "stoch": 1,
+    "stoch_d": 2,
+    "adx": 1,
+    "donchian_high": 1,
+    "donchian_low": 1,
+    "prior_close_high": 1,
+    "roc": 1,
+    "obv": 0,
+    "obv_sma": 1,
+    "rel_volume": 1,
+}
+_LEVEL_SERIES = {"rsi", "stoch", "stoch_d", "adx"}
+_WIDTH_SERIES = {"bb_upper", "bb_mid", "bb_lower"}
+_MACD_SERIES = {"macd", "macd_signal", "macd_hist"}
+_VOLUME_SERIES = {"obv", "obv_sma", "rel_volume"}
 _DUAL_KEYS = {"mode", "fast_weeks", "slow_weeks", "base_or_breakout", "above_long_averages"}
 _PRIOR_KEYS = {"mode", "prior_weeks", "base_or_breakout", "above_long_averages"}
+
+
+@dataclass(frozen=True)
+class Condition:
+    left: str
+    args: tuple[int | float, ...]
+    op: str
+    right_value: int | float | None = None
+    right_series: str | None = None
+    right_args: tuple[int | float, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -32,6 +71,7 @@ class Spec:
     fast_weeks: int | None = None
     slow_weeks: int | None = None
     prior_weeks: int | None = None
+    conditions: tuple[Condition, ...] = ()
 
 
 def locked_crashgate() -> Spec:
@@ -70,7 +110,37 @@ def spec_to_mapping(spec: Spec) -> dict:
             "base_or_breakout": spec.base_or_breakout,
             "above_long_averages": spec.above_long_averages,
         }
+    if spec.mode == "indicator":
+        return {
+            "mode": spec.mode,
+            "conditions": [_condition_mapping(condition) for condition in spec.conditions],
+            "base_or_breakout": spec.base_or_breakout,
+            "above_long_averages": spec.above_long_averages,
+        }
     raise ValueError(f"mode {spec.mode}")
+
+
+def needs_volume(spec: Spec) -> bool:
+    if spec.mode != "indicator":
+        return False
+    names = {condition.left for condition in spec.conditions}
+    names.update(
+        condition.right_series for condition in spec.conditions if condition.right_series is not None
+    )
+    return bool(names & _VOLUME_SERIES)
+
+
+def _condition_mapping(condition: Condition) -> dict:
+    if condition.right_series is not None:
+        right: dict = {"series": condition.right_series, "args": list(condition.right_args)}
+    else:
+        right = {"value": condition.right_value}
+    return {
+        "left": condition.left,
+        "args": list(condition.args),
+        "op": condition.op,
+        "right": right,
+    }
 
 
 def _canonical_down_week(value: object) -> float | None:
@@ -168,4 +238,107 @@ def spec_from_mapping(data: dict) -> Spec:
             base_or_breakout=base,
             above_long_averages=long,
         )
+    if mode == "indicator":
+        return _indicator_spec(data)
     raise ValueError("mode")
+
+
+def _canonical_number(value: object) -> int | float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("number")
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("number")
+        if value.is_integer() and abs(value) < 1e15:
+            return int(value)
+        return value
+    return value
+
+
+def _period(value: object) -> int:
+    number = _canonical_number(value)
+    if isinstance(number, float) or not 2 <= number <= 260:
+        raise ValueError("period")
+    return number
+
+
+def _series_args(name: str, raw: object) -> tuple[int | float, ...]:
+    if name not in _SERIES_ARITY:
+        raise ValueError(name)
+    if not isinstance(raw, (list, tuple)) or len(raw) != _SERIES_ARITY[name]:
+        raise ValueError(name)
+    if name in _WIDTH_SERIES:
+        period = _period(raw[0])
+        width = _canonical_number(raw[1])
+        if not 0.5 <= float(width) <= 4.0:
+            raise ValueError("width")
+        return (period, width)
+    if name in _MACD_SERIES:
+        periods = tuple(_period(arg) for arg in raw)
+        if periods[0] >= periods[1]:
+            raise ValueError("fast")
+        return periods
+    return tuple(_period(arg) for arg in raw)
+
+
+def _threshold_number(left: str, value: object) -> int | float:
+    number = _canonical_number(value)
+    if left in _LEVEL_SERIES and not 0 <= float(number) <= 100:
+        raise ValueError("level")
+    if left == "rel_volume" and float(number) <= 0.0:
+        raise ValueError("multiple")
+    return number
+
+
+def _condition_from_mapping(data: object) -> Condition:
+    if not isinstance(data, dict):
+        raise ValueError("conditions")
+    left = data.get("left")
+    op = data.get("op")
+    if not isinstance(left, str) or op not in _OPS:
+        raise ValueError("op")
+    args = _series_args(left, data.get("args"))
+    right = data.get("right")
+    if not isinstance(right, dict):
+        raise ValueError("right")
+    has_value = "value" in right
+    has_series = "series" in right
+    if has_value == has_series:
+        raise ValueError("right")
+    if has_value:
+        return Condition(left=left, args=args, op=op, right_value=_threshold_number(left, right["value"]))
+    series = right.get("series")
+    if not isinstance(series, str):
+        raise ValueError("right")
+    return Condition(
+        left=left,
+        args=args,
+        op=op,
+        right_series=series,
+        right_args=_series_args(series, right.get("args")),
+    )
+
+
+def _indicator_spec(data: dict) -> Spec:
+    extra = set(data) - _INDICATOR_KEYS
+    if extra:
+        raise ValueError(sorted(extra)[0])
+    missing = _INDICATOR_KEYS - set(data)
+    if missing:
+        raise ValueError(sorted(missing)[0])
+    raw_conditions = data["conditions"]
+    if not isinstance(raw_conditions, list) or not raw_conditions:
+        raise ValueError("conditions")
+    conditions = tuple(_condition_from_mapping(item) for item in raw_conditions)
+    if not any(condition.args or condition.right_args or condition.right_value is not None for condition in conditions):
+        raise ValueError("number")
+    base = data["base_or_breakout"]
+    long = data["above_long_averages"]
+    if not isinstance(base, bool) or not isinstance(long, bool):
+        raise ValueError("switch")
+    return Spec(
+        mode="indicator",
+        base_or_breakout=base,
+        above_long_averages=long,
+        conditions=conditions,
+    )

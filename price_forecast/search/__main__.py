@@ -29,10 +29,10 @@ from price_forecast.search.score import (
     skill_warnings,
     stress_result,
 )
-from price_forecast.search.spec import locked_crashgate, spec_to_mapping
+from price_forecast.search.spec import locked_crashgate, needs_volume, spec_to_mapping
 from price_forecast.search.translate import Unmapped, append_side_pile, translate
 from price_forecast.strategies.crashgate_entry import BaseBreakoutGate
-from price_forecast.strategies.crashgate_v1 import weekly_sessions
+from price_forecast.strategies.indicators import weekly_bars
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -127,8 +127,9 @@ def gate_for(candles):
 
 
 def score_file(candles, spec, gate) -> PathMetrics:
-    weeks = weekly_sessions(candles)
-    path = simulate_spec(weeks, spec, gate, cost=FILL_COST)
+    bars = weekly_bars(candles)
+    weeks = [(bar.day, bar.close) for bar in bars]
+    path = simulate_spec(weeks, spec, gate, bars=bars, cost=FILL_COST)
     return metrics_from_path(
         path, first_price=path.start_price, last_price=path.end_price, cost=FILL_COST
     )
@@ -280,9 +281,11 @@ def _score_child(coinbase_candles, stress_candles, spec, _gate, baseline: PathMe
         }
     remix_edges = []
     synthetic_edges = []
+    volume_idea = needs_volume(spec)
     try:
-        for candles in stress_candles["remix"]:
-            remix_edges.append(score_file(candles, spec, gate_for(candles)).edge)
+        if not volume_idea:
+            for candles in stress_candles["remix"]:
+                remix_edges.append(score_file(candles, spec, gate_for(candles)).edge)
         for candles in stress_candles["synthetic"]:
             synthetic_edges.append(score_file(candles, spec, gate_for(candles)).edge)
     except Exception as exc:
@@ -293,7 +296,12 @@ def _score_child(coinbase_candles, stress_candles, spec, _gate, baseline: PathMe
             "fragile": fragile,
             "round_trips": coinbase.round_trips,
         }
-    passed, remix_mean, synthetic_mean = stress_result(coinbase.edge, remix_edges, synthetic_edges)
+    passed, remix_mean, synthetic_mean = stress_result(
+        coinbase.edge,
+        remix_edges,
+        synthetic_edges,
+        require_remix=not volume_idea,
+    )
     return {
         "status": "ok",
         "coinbase": _metrics_dict(coinbase),

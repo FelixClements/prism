@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from typing import Callable, Sequence
 
@@ -36,6 +37,26 @@ def _filters(spec: Spec, day: date, gate: Gate) -> bool:
     if spec.above_long_averages and not long:
         return False
     return True
+
+
+def _conditions_hold(conditions: tuple, columns: dict | None, index: int) -> bool:
+    if not conditions:
+        return True
+    if columns is None:
+        return False
+    for condition in conditions:
+        left = columns[(condition.left, condition.args)][index]
+        if condition.right_series is None:
+            right = condition.right_value
+        else:
+            right = columns[(condition.right_series, condition.right_args)][index]
+        if left is None or right is None or not _compare(left, condition.op, float(right)):
+            return False
+    return True
+
+
+def _addons_pass(spec: Spec, columns: dict | None, index: int) -> bool:
+    return _conditions_hold(spec.conditions, columns, index)
 
 
 def _threshold_entry(spec: Spec, closes: list[float], index: int, day: date, gate: Gate) -> bool:
@@ -134,6 +155,13 @@ def simulate_spec(
     if cost < 0:
         raise ValueError("cost must be non-negative")
     columns = None
+    if spec.mode == "threshold" and (spec.conditions or spec.exit_conditions):
+        source = bars
+        if source is None:
+            source = [WeekBar(day, close, close, close, close, None) for day, close in weeks]
+        if len(source) != len(weeks):
+            raise ValueError("indicator spec needs weekly bars")
+        columns = _indicator_columns(replace(spec, conditions=spec.conditions + spec.exit_conditions), source)
     if spec.mode == "indicator":
         if bars is None or len(bars) != len(weeks):
             raise ValueError("indicator spec needs weekly bars")
@@ -192,9 +220,12 @@ def simulate_spec(
         if index + 1 >= len(weeks):
             continue
         if spec.mode == "threshold":
-            if position == 0 and _threshold_entry(spec, closes, index, day, gate):
+            if position == 0 and _threshold_entry(spec, closes, index, day, gate) and _addons_pass(spec, columns, index):
                 pending = "buy"
-            elif position == 1 and _threshold_exit(spec, closes, index):
+            elif position == 1 and (
+                _threshold_exit(spec, closes, index)
+                or (spec.exit_conditions and _conditions_hold(spec.exit_conditions, columns, index))
+            ):
                 pending = "sell"
         elif spec.mode == "indicator":
             assert columns is not None

@@ -1,4 +1,4 @@
-"""Measure Student-t moves, run lengths, successors, and bar shapes."""
+"""Group each regime's real days by run, and count run successors."""
 
 from __future__ import annotations
 
@@ -7,18 +7,18 @@ from dataclasses import dataclass
 from typing import Sequence
 
 import numpy as np
-from scipy.stats import t
 
 from price_forecast.data.candles import Candle
 from price_forecast.datafactory.synthetic.label import REGIME_NAMES, LabelResult
 
 MIN_ROWS = 30
 MIN_RUNS = 2
+FLAT_VOL = 1e-12
 
 
 @dataclass(frozen=True)
-class BarShape:
-    open_ratio: float
+class RealDay:
+    log_return: float
     high_ratio: float
     low_ratio: float
     volume: float
@@ -26,12 +26,8 @@ class BarShape:
 
 @dataclass(frozen=True)
 class RegimeModel:
-    df: float
-    loc: float
-    scale: float
-    run_lengths: tuple[int, ...]
+    chapters: tuple[tuple[RealDay, ...], ...]
     successors: tuple[str, ...]
-    shapes: tuple[BarShape, ...]
 
 
 @dataclass(frozen=True)
@@ -40,61 +36,50 @@ class TapeModel:
     regimes: dict[str, RegimeModel]
 
 
+def real_day(candles: Sequence[Candle], index: int) -> RealDay:
+    """Return, wicks, and volume of one source row, kept together."""
+    candle = candles[index]
+    if candle.volume is None:
+        raise ValueError(f"row {index} has a blank volume")
+    return RealDay(
+        math.log(candle.close / candles[index - 1].close),
+        candle.high / candle.close,
+        candle.low / candle.close,
+        float(candle.volume),
+    )
+
+
 def fit_tape(candles: Sequence[Candle], labeling: LabelResult) -> TapeModel:
     if len(labeling.labels) != len(candles):
         raise ValueError("labels must align with candles")
-    groups = {name: [] for name in REGIME_NAMES}
-    runs: list[tuple[str, int]] = []
+    spans: list[tuple[str, list[int]]] = []
     for index, name in enumerate(labeling.labels):
         if name is None:
             continue
-        if name not in groups:
+        if name not in REGIME_NAMES:
             raise ValueError(f"unknown regime {name}")
-        groups[name].append(index)
-        if not runs or runs[-1][0] != name:
-            runs.append((name, 1))
+        if not spans or spans[-1][0] != name:
+            spans.append((name, [index]))
         else:
-            runs[-1] = (name, runs[-1][1] + 1)
-    run_lengths = {name: [] for name in REGIME_NAMES}
+            spans[-1][1].append(index)
+    chapters = {name: [] for name in REGIME_NAMES}
     successors = {name: [] for name in REGIME_NAMES}
-    for pos, (name, length) in enumerate(runs):
-        run_lengths[name].append(length)
-        if pos + 1 < len(runs):
-            successors[name].append(runs[pos + 1][0])
+    for pos, (name, indexes) in enumerate(spans):
+        chapters[name].append(indexes)
+        if pos + 1 < len(spans):
+            successors[name].append(spans[pos + 1][0])
     regimes: dict[str, RegimeModel] = {}
     for name in REGIME_NAMES:
-        indexes = groups[name]
-        lengths = run_lengths[name]
-        if len(indexes) < MIN_ROWS or len(lengths) < MIN_RUNS:
-            raise ValueError(
-                f"{name} has {len(indexes)} labeled rows and {len(lengths)} runs"
-            )
-        for index in indexes:
-            if candles[index].volume is None:
-                raise ValueError(f"{name} has a blank volume")
-        returns = np.array(
-            [
-                math.log(candles[index].close / candles[index - 1].close)
-                for index in indexes
-            ],
-            dtype=float,
-        )
-        if returns.size < 2 or float(np.std(returns, ddof=1)) == 0.0:
+        runs = chapters[name]
+        rows = sum(len(indexes) for indexes in runs)
+        if rows < MIN_ROWS or len(runs) < MIN_RUNS:
+            raise ValueError(f"{name} has {rows} labeled rows and {len(runs)} runs")
+        try:
+            days = tuple(tuple(real_day(candles, index) for index in indexes) for indexes in runs)
+        except ValueError as exc:
+            raise ValueError(f"{name}: {exc}") from exc
+        returns = [day.log_return for chapter in days for day in chapter]
+        if float(np.std(returns, ddof=1)) < FLAT_VOL:
             raise ValueError(f"{name} has zero volatility")
-        df, loc, scale = t.fit(returns)
-        df = float(df)
-        loc = float(loc)
-        scale = float(scale)
-        if df <= 2.0 or not math.isfinite(df) or not math.isfinite(loc) or not math.isfinite(scale):
-            raise ValueError(f"{name} student-t df={df}")
-        shapes = tuple(
-            BarShape(
-                candles[index].open / candles[index].close,
-                candles[index].high / candles[index].close,
-                candles[index].low / candles[index].close,
-                float(candles[index].volume),
-            )
-            for index in indexes
-        )
-        regimes[name] = RegimeModel(df, loc, scale, tuple(lengths), tuple(successors[name]), shapes)
-    return TapeModel(tuple(runs), regimes)
+        regimes[name] = RegimeModel(days, tuple(successors[name]))
+    return TapeModel(tuple((name, len(indexes)) for name, indexes in spans), regimes)

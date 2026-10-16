@@ -81,6 +81,12 @@ def test_short_blocks_destroy_weekly_lag8_acf_relative_to_long_blocks():
     assert median_abs_weekly_acf8(long) > median_abs_weekly_acf8(iid)
 
 
+def test_trending_weeks_show_momentum_and_a_variance_ratio_above_one():
+    facts = stylized_facts(_seasonal_daily(n=728))
+    assert facts["momentum_8w"] > 0.5
+    assert facts["variance_ratio_13w"] > 1.5
+
+
 def test_remixed_path_feeds_weekly_sma_without_error():
     series = _seasonal_daily(n=200)
     path = remix_daily_closes(series, n_paths=1, mean_block_bars=30, seed=0)[0]
@@ -107,6 +113,8 @@ def test_sanity_compares_real_remixed_and_iid_control():
         "acf_weekly_1",
         "acf_weekly_4",
         "acf_weekly_8",
+        "momentum_8w",
+        "variance_ratio_13w",
     ):
         assert key in facts
         assert key in report["remixed"]["median"]

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from price_forecast.data.candles import read_candles, write_candles
 from price_forecast.datafactory.synthetic.__main__ import main
+from price_forecast.datafactory.synthetic import fit as fit_module
 from price_forecast.datafactory.synthetic.fit import fit_tape
 from price_forecast.datafactory.synthetic.label import label_candles
 from price_forecast.datafactory.synthetic.paths import synthetic_paths
@@ -104,10 +106,7 @@ def test_fit_failure_writes_nothing(tmp_path, monkeypatch):
     dest = tmp_path / "synthetic"
     monkeypatch.setattr("price_forecast.datafactory.synthetic.__main__.SYNTHETIC_DIR", dest)
     _short_windows(monkeypatch)
-    monkeypatch.setattr(
-        "price_forecast.datafactory.synthetic.fit.t.fit",
-        lambda _returns: (1.0, 0.0, 0.01),
-    )
+    monkeypatch.setattr("price_forecast.datafactory.synthetic.fit.MIN_ROWS", 10_000)
     with pytest.raises(ValueError, match="bull_quiet"):
         main(["--csv", str(source)])
     assert dest.exists() is False
@@ -118,9 +117,10 @@ def test_non_finite_return_writes_nothing(tmp_path, monkeypatch):
     dest = tmp_path / "synthetic"
     monkeypatch.setattr("price_forecast.datafactory.synthetic.__main__.SYNTHETIC_DIR", dest)
     _short_windows(monkeypatch)
+    real_day = fit_module.real_day
     monkeypatch.setattr(
-        "price_forecast.datafactory.synthetic.paths.t.rvs",
-        lambda *args, **kwargs: float("nan"),
+        "price_forecast.datafactory.synthetic.fit.real_day",
+        lambda candles, index: replace(real_day(candles, index), log_return=float("nan")),
     )
     with pytest.raises(ValueError, match="non-finite"):
         main(["--csv", str(source), "--n-paths", "2"])

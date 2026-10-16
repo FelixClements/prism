@@ -1,4 +1,9 @@
-"""Draw synthetic candle paths and the one-regime control."""
+"""Draw synthetic candle paths and the one-regime control.
+
+A chapter copies consecutive real days of its regime, starting anywhere in a
+random real run of that regime. Each day keeps its own return, wicks, and
+volume, so crash days, wick size, and volume stay tied to the move.
+"""
 
 from __future__ import annotations
 
@@ -8,13 +13,10 @@ from datetime import timedelta
 from typing import Sequence
 
 import numpy as np
-from scipy.stats import t
 
 from price_forecast.data.candles import Candle
-from price_forecast.datafactory.synthetic.fit import BarShape, TapeModel
+from price_forecast.datafactory.synthetic.fit import FLAT_VOL, RealDay, TapeModel, real_day
 from price_forecast.datafactory.synthetic.label import LabelResult
-
-MAX_DAILY_MOVE = 0.20
 
 
 @dataclass(frozen=True)
@@ -66,91 +68,54 @@ def _regime_path(
     regime = model.runs[start][0]
     rows = [candles[0]]
     regimes = [regime]
-    remaining = len(candles) - 1
-    shift = _drift_shift(candles, model)
-    while remaining > 0:
+    shift = _drift_shift(
+        candles,
+        [day for params in model.regimes.values() for chapter in params.chapters for day in chapter],
+    )
+    while len(rows) < len(candles):
         params = model.regimes[regime]
-        length = int(params.run_lengths[int(rng.integers(0, len(params.run_lengths)))])
-        take = min(length, remaining)
+        length = len(params.chapters[int(rng.integers(0, len(params.chapters)))])
+        take = min(length, len(candles) - len(rows))
+        chapter = params.chapters[int(rng.integers(0, len(params.chapters)))]
+        offset = int(rng.integers(0, len(chapter)))
         for _ in range(take):
-            shock = float(
-                t.rvs(
-                    params.df,
-                    loc=params.loc - shift,
-                    scale=params.scale,
-                    random_state=rng,
-                )
-            )
-            if not math.isfinite(shock):
-                raise ValueError(f"non-finite return in {regime}")
-            for piece in _split_log_return(shock):
-                close = rows[-1].close * math.exp(piece)
-                if not math.isfinite(close) or close <= 0.0:
-                    raise ValueError(f"non-finite return in {regime}")
-                shape = params.shapes[int(rng.integers(0, len(params.shapes)))]
-                day = rows[-1].day + timedelta(days=1)
-                open_price = rows[-1].close
-                rows.append(_scaled(day, close, shape, open_price))
-                regimes.append(regime)
-        remaining -= take
-        if remaining > 0:
+            if offset == len(chapter):
+                chapter = params.chapters[int(rng.integers(0, len(params.chapters)))]
+                offset = 0
+            rows.append(_next_row(rows[-1], chapter[offset], shift, regime))
+            regimes.append(regime)
+            offset += 1
+        if len(rows) < len(candles):
             regime = params.successors[int(rng.integers(0, len(params.successors)))]
     return PathResult(tuple(rows), tuple(regimes))
 
 
 def _flat_path(
     candles: Sequence[Candle],
-    pooled: tuple[float, float, float, tuple[BarShape, ...]],
+    pooled: tuple[RealDay, ...],
     rng: np.random.Generator,
 ) -> tuple[Candle, ...]:
-    df, loc, scale, shapes = pooled
     rows = [candles[0]]
-    anchored = loc - _source_daily_drift(candles)
-    for _ in range(1, len(candles)):
-        shock = float(t.rvs(df, loc=loc - anchored, scale=scale, random_state=rng))
-        if not math.isfinite(shock):
-            raise ValueError("non-finite return in control")
-        for piece in _split_log_return(shock):
-            close = rows[-1].close * math.exp(piece)
-            if not math.isfinite(close) or close <= 0.0:
-                raise ValueError("non-finite return in control")
-            shape = shapes[int(rng.integers(0, len(shapes)))]
-            day = rows[-1].day + timedelta(days=1)
-            open_price = rows[-1].close
-            rows.append(_scaled(day, close, shape, open_price))
+    shift = _drift_shift(candles, pooled)
+    while len(rows) < len(candles):
+        day = pooled[int(rng.integers(0, len(pooled)))]
+        rows.append(_next_row(rows[-1], day, shift, "control"))
     return tuple(rows)
 
 
-def _pooled(
-    candles: Sequence[Candle],
-    labeling: LabelResult,
-) -> tuple[float, float, float, tuple[BarShape, ...]]:
+def _pooled(candles: Sequence[Candle], labeling: LabelResult) -> tuple[RealDay, ...]:
+    if len(labeling.labels) != len(candles):
+        raise ValueError("labels must align with candles")
     indexes = [index for index, name in enumerate(labeling.labels) if name is not None]
     if len(indexes) < 30:
         raise ValueError("pooled regime has fewer than 30 labeled rows")
-    returns = [
-        math.log(candles[index].close / candles[index - 1].close) for index in indexes
-    ]
-    vol = float(np.std(returns, ddof=1))
-    if vol == 0.0:
+    try:
+        days = tuple(real_day(candles, index) for index in indexes)
+    except ValueError as exc:
+        raise ValueError(f"pooled regime: {exc}") from exc
+    if float(np.std([day.log_return for day in days], ddof=1)) < FLAT_VOL:
         raise ValueError("pooled regime has zero volatility")
-    for index in indexes:
-        if candles[index].volume is None:
-            raise ValueError("pooled regime has a blank volume")
-    df, loc, scale = t.fit(returns)
-    df, loc, scale = float(df), float(loc), float(scale)
-    if df <= 2.0 or not all(math.isfinite(value) for value in (df, loc, scale)):
-        raise ValueError(f"pooled student-t df={df}")
-    shapes = tuple(
-        BarShape(
-            candles[index].open / candles[index].close,
-            candles[index].high / candles[index].close,
-            candles[index].low / candles[index].close,
-            float(candles[index].volume),
-        )
-        for index in indexes
-    )
-    return df, loc, scale, shapes
+    return days
 
 
 def _source_daily_drift(candles: Sequence[Candle]) -> float:
@@ -158,25 +123,22 @@ def _source_daily_drift(candles: Sequence[Candle]) -> float:
     return math.log(candles[-1].close / candles[0].close) / steps
 
 
-def _drift_shift(candles: Sequence[Candle], model: TapeModel) -> float:
-    total = 0
-    weighted = 0.0
-    for params in model.regimes.values():
-        weight = sum(params.run_lengths)
-        total += weight
-        weighted += params.loc * weight
-    return weighted / total - _source_daily_drift(candles)
+def _drift_shift(candles: Sequence[Candle], days: Sequence[RealDay]) -> float:
+    """Labeled days skip the unlabeled prefix; pull their mean back to the source climb."""
+    mean = sum(day.log_return for day in days) / len(days)
+    return mean - _source_daily_drift(candles)
 
 
-def _split_log_return(log_return: float) -> tuple[float, ...]:
-    n = 1
-    while abs(math.exp(log_return / n) - 1.0) > MAX_DAILY_MOVE + 1e-12:
-        n += 1
-    piece = log_return / n
-    return (piece,) * n
-
-
-def _scaled(day, close: float, shape: BarShape, open_price: float) -> Candle:
-    high = max(close * shape.high_ratio, open_price, close)
-    low = min(close * shape.low_ratio, open_price, close)
-    return Candle(day, low, high, open_price, close, shape.volume)
+def _next_row(previous: Candle, day: RealDay, shift: float, regime: str) -> Candle:
+    close = previous.close * math.exp(day.log_return - shift)
+    if not math.isfinite(close) or close <= 0.0:
+        raise ValueError(f"non-finite return in {regime}")
+    open_price = previous.close
+    return Candle(
+        previous.day + timedelta(days=1),
+        min(close * day.low_ratio, open_price, close),
+        max(close * day.high_ratio, open_price, close),
+        open_price,
+        close,
+        day.volume,
+    )

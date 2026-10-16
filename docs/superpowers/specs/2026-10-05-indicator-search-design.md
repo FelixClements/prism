@@ -134,9 +134,9 @@ Numbers outside a range fail the draft. `rsi_1 < 25`, `rsi_14 < 120`, a Bollinge
 
 A spec needs volume when any series is `obv`, `obv_sma`, or `rel_volume`.
 
-A spec that does not need volume is scored as today: Coinbase, 100 remix paths, and 100 synthetic paths. It enters the pool only when the Coinbase edge is positive, both path-family means are at least half of that edge, and the row is not fragile.
+Every spec is scored the same way: Coinbase, 100 remix paths, and 100 synthetic paths. It enters the pool only when the Coinbase edge is positive, both path-family means are at least half of that edge, and the row is not fragile.
 
-A spec that needs volume is scored on Coinbase and on the synthetic paths. Remix files have no volume, so they are not run. `remix_mean_edge` is null. `stress_pass` is true when the Coinbase edge is positive and the synthetic mean is at least half of that edge. A non-positive Coinbase edge still skips every path family, stores null means, and fails the stress check. The other pool rules are unchanged. If the Coinbase weeks do not have volume, the simulation raises and the row is an error.
+Remix rows carry the landing source day's volume (revision 2026-10-15; they used to be blank and volume specs skipped remix). A non-positive Coinbase edge still skips every path family, stores null means, and fails the stress check. If the Coinbase weeks do not have volume, the simulation raises and the row is an error.
 
 ## Breeding an indicator parent
 
@@ -164,7 +164,7 @@ Tests live under `tests/search/` and `tests/strategies/`. They use small fixture
 - `rsi_1 < 25`, `rsi_14 < 120`, `close > sma_50 > sma_200`, and a down-week phrase mixed with RSI produce no score
 - Once `rsi_21 < 25` is the parent, one edit changes only one number, to period 20 or 22 or to level 24 or 26
 - Once a 7-week indicator average is the parent, one edit moves that period to 6 or 8
-- A volume spec leaves `remix_mean_edge` null and can still pass on the synthetic mean. A price spec still requires both means
+- A volume spec, like a price spec, requires both path-family means
 - Hand-computed series, from closes `10, 11, 12, 11, 13`:
   - SMA(3) on the last close is 12
   - EMA(3) on the last close is 12. The multiplier is 0.5, the seed at the third close is 11, and the fourth close stays 11
@@ -187,5 +187,4 @@ Tests live under `tests/search/` and `tests/strategies/`. They use small fixture
 - `price_forecast/search/translate.py` parses the phrases
 - `price_forecast/search/mutate.py` steps one number for an indicator parent and leaves the original three modes alone
 - `price_forecast/search/runner.py` evaluates the comparisons on the same fill clock
-- `price_forecast/search/score.py` and `price_forecast/search/__main__.py` skip remix for a spec that needs volume
 - Tests cover the cases in the section above

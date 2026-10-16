@@ -7,8 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import numpy as np
-
 from price_forecast.data.candles import BTC_USD_DAILY_CSV, read_candles
 from price_forecast.search.ledger import (
     _replace,
@@ -18,19 +16,20 @@ from price_forecast.search.ledger import (
     load_pool,
     save_pool,
 )
-from price_forecast.search.mutate import mutate
+from price_forecast.search.mutate import mutate_sell
 from price_forecast.search.runner import FILL_COST, simulate_spec
 from price_forecast.search.score import (
     PathMetrics,
     baseline_is_usable,
+    beats_best,
     breeding_number,
     is_fragile,
     metrics_from_path,
     skill_warnings,
     stress_result,
 )
-from price_forecast.search.spec import locked_crashgate, needs_volume, spec_to_mapping
-from price_forecast.search.translate import Unmapped, append_side_pile, translate
+from price_forecast.search.spec import locked_crashgate, spec_to_mapping
+from price_forecast.search.translate import Unmapped
 from price_forecast.strategies.crashgate_entry import BaseBreakoutGate
 from price_forecast.strategies.indicators import weekly_bars
 
@@ -281,11 +280,9 @@ def _score_child(coinbase_candles, stress_candles, spec, _gate, baseline: PathMe
         }
     remix_edges = []
     synthetic_edges = []
-    volume_idea = needs_volume(spec)
     try:
-        if not volume_idea:
-            for candles in stress_candles["remix"]:
-                remix_edges.append(score_file(candles, spec, gate_for(candles)).edge)
+        for candles in stress_candles["remix"]:
+            remix_edges.append(score_file(candles, spec, gate_for(candles)).edge)
         for candles in stress_candles["synthetic"]:
             synthetic_edges.append(score_file(candles, spec, gate_for(candles)).edge)
     except Exception as exc:
@@ -296,12 +293,7 @@ def _score_child(coinbase_candles, stress_candles, spec, _gate, baseline: PathMe
             "fragile": fragile,
             "round_trips": coinbase.round_trips,
         }
-    passed, remix_mean, synthetic_mean = stress_result(
-        coinbase.edge,
-        remix_edges,
-        synthetic_edges,
-        require_remix=not volume_idea,
-    )
+    passed, remix_mean, synthetic_mean = stress_result(coinbase.edge, remix_edges, synthetic_edges)
     return {
         "status": "ok",
         "coinbase": _metrics_dict(coinbase),
@@ -378,9 +370,28 @@ def _member_from_row(row: dict) -> dict:
         "inserted_cycle": row["cycle"],
         "trial_count": row["trial_count"],
         "coinbase_edge": row["coinbase_edge"],
+        "remix_mean_edge": row.get("remix_mean_edge"),
+        "synthetic_mean_edge": row.get("synthetic_mean_edge"),
         "stress_pass": row["stress_pass"],
         "fragile": row["fragile"],
     }
+
+
+def _stored_path_means(member: dict, ledger_path: Path) -> tuple[float | None, float | None]:
+    remix = member.get("remix_mean_edge")
+    synthetic = member.get("synthetic_mean_edge")
+    if remix is not None and synthetic is not None:
+        return remix, synthetic
+    if not ledger_path.is_file():
+        return remix, synthetic
+    for line in ledger_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("id") != member.get("id"):
+            continue
+        return row.get("remix_mean_edge"), row.get("synthetic_mean_edge")
+    return remix, synthetic
 
 
 def _load_stress(remix_dir: Path, synthetic_dir: Path, count: int) -> dict:
@@ -488,27 +499,11 @@ def main(argv: list[str] | None = None) -> int:
 
         members = pool["members"]
         champion = champion_of(members)
-        previous = champion["breeding_number"]
         trial = pool["trial_count"]
         stall = pool["stall"]
         parent_id = champion["id"]
-        child_spec = None
-        if stall >= 50:
-            try:
-                draft = pivot_runner(results, parent_spec(champion))
-                child_spec = translate(draft)
-            except Unmapped as exc:
-                append_side_pile(side_path, draft_id=str(champion["id"]), phrase=exc.phrase)
-                pool["stall"] = 0
-                save_cycle()
-                return
-            pool["stall"] = 0
-            stall = 0
-        if child_spec is None:
-            picker = np.random.Generator(np.random.PCG64(np.random.SeedSequence([args.run_seed, cycle, 1])))
-            parent = members[int(picker.integers(0, len(members)))]
-            parent_id = parent["id"]
-            child_spec = mutate(parent_spec(parent), run_seed=args.run_seed, cycle=cycle)
+        best_remix, best_synthetic = _stored_path_means(champion, ledger_path)
+        child_spec = mutate_sell(parent_spec(champion), run_seed=args.run_seed, cycle=cycle)
         scored = _score_child(coinbase_candles, stress, child_spec, gate, baseline_metrics)
         status = scored["status"]
         if status == "ok":
@@ -523,12 +518,25 @@ def main(argv: list[str] | None = None) -> int:
         }
         row.update(scored)
         append_jsonl(ledger_path, row)
-        if status == "ok":
-            members = insert_member(members, _member_from_row(row))
-            pool["members"] = members
-            current = champion_of(members)
-            pool["champion_id"] = current["id"]
-            pool["stall"] = 0 if current["breeding_number"] > previous else stall + 1
+        won = status == "ok" and beats_best(
+            {
+                "breeding": row.get("breeding_number"),
+                "edge": row.get("coinbase_edge"),
+                "remix": row.get("remix_mean_edge"),
+                "synthetic": row.get("synthetic_mean_edge"),
+                "fragile": row.get("fragile"),
+            },
+            {
+                "breeding": champion["breeding_number"],
+                "remix": best_remix,
+                "synthetic": best_synthetic,
+            },
+        )
+        if won:
+            member = _member_from_row(row)
+            pool["members"] = [member]
+            pool["champion_id"] = member["id"]
+            pool["stall"] = 0
         else:
             pool["stall"] = stall + 1
         save_cycle()

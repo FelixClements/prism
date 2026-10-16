@@ -40,16 +40,23 @@ from price_forecast.data.series import PriceSeries
 from price_forecast.data.weekly import weekly_closes
 
 MEAN_BLOCK_BARS = 182
-_FACT_KEYS: tuple[str, ...] = (
+FACT_KEYS: tuple[str, ...] = (
     "daily_vol",
     "weekly_vol",
     "excess_kurtosis",
     "daily_p01",
+    "worst_day",
     "hodl_max_dd",
     "acf_daily_1",
     "acf_weekly_1",
     "acf_weekly_4",
     "acf_weekly_8",
+    "momentum_8w",
+    "variance_ratio_13w",
+    "acf_abs_1",
+    "acf_abs_10",
+    "acf_abs_30",
+    "leverage",
 )
 
 
@@ -87,7 +94,7 @@ def remix_candle_paths(
     mean_block_bars: int = MEAN_BLOCK_BARS,
     seed: int = 0,
 ) -> tuple[tuple[Candle, ...], ...]:
-    """Same closes as remix_daily_closes. Wicks scale from the landing source day."""
+    """Same closes as remix_daily_closes. Wicks and volume come from the landing source day."""
     series = closes_from_candles(candles)
     dates = list(series.dates())
     prices = _close_array(series)
@@ -105,7 +112,7 @@ def remix_candle_paths(
         rebuilt = np.concatenate(([start], start * np.exp(np.cumsum(remixed))))
         first = candles[0]
         rows = [
-            Candle(first.day, first.low, first.high, first.open, float(rebuilt[0]), None)
+            Candle(first.day, first.low, first.high, first.open, float(rebuilt[0]), first.volume)
         ]
         for step, source_return in enumerate(indexes):
             landing = candles[int(source_return) + 1]
@@ -118,7 +125,7 @@ def remix_candle_paths(
                     close * (landing.high / base),
                     close * (landing.open / base),
                     close,
-                    None,
+                    landing.volume,
                 )
             )
         paths.append(tuple(rows))
@@ -126,21 +133,34 @@ def remix_candle_paths(
 
 
 def stylized_facts(series: PriceSeries) -> dict[str, float]:
-    """Single-path facts the factory must not silently destroy."""
+    """Single-path facts the factory must not silently destroy.
+
+    Weekly autocorrelation, momentum, and variance ratio average the seven
+    possible week-end days; one end day alone swings lag 1 from -0.02 to 0.09
+    on the real tape. `weekly_vol` keeps the Sunday weeks of `weekly_closes`.
+    """
     daily = _close_array(series)
     daily_r = _log_returns(daily)
     weekly = np.array([close for _day, close in weekly_closes(series)], dtype=float)
     weekly_r = _log_returns(weekly)
+    phases = _week_phases(daily)
     return {
         "daily_vol": _sample_vol(daily_r),
         "weekly_vol": _sample_vol(weekly_r),
         "excess_kurtosis": _excess_kurtosis(daily_r),
         "daily_p01": _percentile(daily_r, 1.0),
+        "worst_day": float(daily_r.min()) if daily_r.size else math.nan,
         "hodl_max_dd": _max_drawdown(daily),
         "acf_daily_1": _acf(daily_r, 1),
-        "acf_weekly_1": _acf(weekly_r, 1),
-        "acf_weekly_4": _acf(weekly_r, 4),
-        "acf_weekly_8": _acf(weekly_r, 8),
+        "acf_weekly_1": _phase_mean(phases, lambda week_r: _acf(week_r, 1)),
+        "acf_weekly_4": _phase_mean(phases, lambda week_r: _acf(week_r, 4)),
+        "acf_weekly_8": _phase_mean(phases, lambda week_r: _acf(week_r, 8)),
+        "momentum_8w": _phase_mean(phases, lambda week_r: _momentum(week_r, 8)),
+        "variance_ratio_13w": _phase_mean(phases, lambda week_r: _variance_ratio(week_r, 13)),
+        "acf_abs_1": _acf(np.abs(daily_r), 1),
+        "acf_abs_10": _acf(np.abs(daily_r), 10),
+        "acf_abs_30": _acf(np.abs(daily_r), 30),
+        "leverage": correlation(daily_r[:-1], np.abs(daily_r[1:])),
     }
 
 
@@ -176,7 +196,7 @@ def format_sanity_report(report: Mapping[str, object]) -> str:
     lines = [
         "stylized fact       real            remixed median  iid_control median",
     ]
-    for key in _FACT_KEYS:
+    for key in FACT_KEYS:
         iid_cell = _fmt(iid_median[key]) if iid_median is not None else "n/a"
         lines.append(
             f"{key:<18} {_fmt(real[key]):<16} {_fmt(remixed_median[key]):<16} {iid_cell}"
@@ -277,9 +297,39 @@ def _percentile(returns: np.ndarray, q: float) -> float:
 def _acf(values: np.ndarray, lag: int) -> float:
     if lag < 1 or values.size <= lag:
         return math.nan
-    left = values[:-lag]
-    right = values[lag:]
-    if np.std(left, ddof=1) == 0.0 or np.std(right, ddof=1) == 0.0:
+    return correlation(values[:-lag], values[lag:])
+
+
+def _week_phases(daily: np.ndarray) -> list[np.ndarray]:
+    """Weekly log-returns for each of the seven possible week-end days."""
+    return [_log_returns(daily[offset::7]) for offset in range(7)]
+
+
+def _phase_mean(phases: Sequence[np.ndarray], fact) -> float:
+    return float(np.mean([fact(weekly_r) for weekly_r in phases]))
+
+
+def _momentum(weekly_r: np.ndarray, lookback: int) -> float:
+    """Correlation of the past `lookback` weeks' summed return with the next week."""
+    if weekly_r.size <= lookback:
+        return math.nan
+    past = np.convolve(weekly_r, np.ones(lookback), "valid")[:-1]
+    return correlation(past, weekly_r[lookback:])
+
+
+def _variance_ratio(weekly_r: np.ndarray, weeks: int) -> float:
+    """Variance of `weeks`-week sums over `weeks` times the weekly variance; 1 for a random walk."""
+    if weekly_r.size <= weeks or np.var(weekly_r) == 0.0:
+        return math.nan
+    sums = np.convolve(weekly_r, np.ones(weeks), "valid")
+    return float(np.var(sums) / (weeks * np.var(weekly_r)))
+
+
+def correlation(left: np.ndarray, right: np.ndarray) -> float:
+    """Pearson correlation; NaN when either side is too short or flat."""
+    left = np.asarray(left, dtype=float)
+    right = np.asarray(right, dtype=float)
+    if left.size < 2 or np.std(left, ddof=1) == 0.0 or np.std(right, ddof=1) == 0.0:
         return math.nan
     return float(np.corrcoef(left, right)[0, 1])
 
@@ -300,7 +350,7 @@ def _summarize_paths(paths: Sequence[PriceSeries]) -> dict[str, object]:
     if not paths:
         raise ValueError("need at least one path to summarize")
     rows = [stylized_facts(path) for path in paths]
-    median = {key: _median([row[key] for row in rows]) for key in _FACT_KEYS}
+    median = {key: _median([row[key] for row in rows]) for key in FACT_KEYS}
     return {"n": len(paths), "median": median}
 
 

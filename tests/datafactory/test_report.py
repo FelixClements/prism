@@ -34,6 +34,15 @@ def test_report_names_facts_counts_and_na_when_a_side_is_thin():
         "acf_weekly_1",
         "acf_weekly_4",
         "acf_weekly_8",
+        "momentum_8w",
+        "variance_ratio_13w",
+        "worst_day",
+        "acf_abs_1",
+        "acf_abs_10",
+        "acf_abs_30",
+        "leverage",
+        "range_abs_corr",
+        "volume_abs_corr",
     ):
         assert key in text
     assert "synthetic median" in text

@@ -17,6 +17,7 @@ _THRESHOLD_KEYS = {
     "close_below_sma_weeks",
     "down_week",
 }
+_THRESHOLD_OPTIONAL = {"conditions", "exit_conditions"}
 _INDICATOR_KEYS = {"mode", "conditions", "base_or_breakout", "above_long_averages"}
 _OPS = {">", ">=", "<", "<="}
 _SERIES_ARITY = {
@@ -45,7 +46,6 @@ _SERIES_ARITY = {
 _LEVEL_SERIES = {"rsi", "stoch", "stoch_d", "adx"}
 _WIDTH_SERIES = {"bb_upper", "bb_mid", "bb_lower"}
 _MACD_SERIES = {"macd", "macd_signal", "macd_hist"}
-_VOLUME_SERIES = {"obv", "obv_sma", "rel_volume"}
 _DUAL_KEYS = {"mode", "fast_weeks", "slow_weeks", "base_or_breakout", "above_long_averages"}
 _PRIOR_KEYS = {"mode", "prior_weeks", "base_or_breakout", "above_long_averages"}
 
@@ -72,6 +72,7 @@ class Spec:
     slow_weeks: int | None = None
     prior_weeks: int | None = None
     conditions: tuple[Condition, ...] = ()
+    exit_conditions: tuple[Condition, ...] = ()
 
 
 def locked_crashgate() -> Spec:
@@ -87,7 +88,7 @@ def locked_crashgate() -> Spec:
 
 def spec_to_mapping(spec: Spec) -> dict:
     if spec.mode == "threshold":
-        return {
+        mapping = {
             "mode": spec.mode,
             "close_above_sma_weeks": spec.close_above_sma_weeks,
             "base_or_breakout": spec.base_or_breakout,
@@ -95,6 +96,11 @@ def spec_to_mapping(spec: Spec) -> dict:
             "close_below_sma_weeks": spec.close_below_sma_weeks,
             "down_week": spec.down_week,
         }
+        if spec.conditions:
+            mapping["conditions"] = [_condition_mapping(condition) for condition in spec.conditions]
+        if spec.exit_conditions:
+            mapping["exit_conditions"] = [_condition_mapping(condition) for condition in spec.exit_conditions]
+        return mapping
     if spec.mode == "dual_average":
         return {
             "mode": spec.mode,
@@ -118,16 +124,6 @@ def spec_to_mapping(spec: Spec) -> dict:
             "above_long_averages": spec.above_long_averages,
         }
     raise ValueError(f"mode {spec.mode}")
-
-
-def needs_volume(spec: Spec) -> bool:
-    if spec.mode != "indicator":
-        return False
-    names = {condition.left for condition in spec.conditions}
-    names.update(
-        condition.right_series for condition in spec.conditions if condition.right_series is not None
-    )
-    return bool(names & _VOLUME_SERIES)
 
 
 def _condition_mapping(condition: Condition) -> dict:
@@ -167,7 +163,7 @@ def spec_from_mapping(data: dict) -> Spec:
         raise ValueError("spec")
     mode = data.get("mode")
     if mode == "threshold":
-        extra = set(data) - _THRESHOLD_KEYS
+        extra = set(data) - _THRESHOLD_KEYS - _THRESHOLD_OPTIONAL
         if extra:
             raise ValueError(sorted(extra)[0])
         missing = _THRESHOLD_KEYS - set(data)
@@ -188,6 +184,14 @@ def spec_from_mapping(data: dict) -> Spec:
             raise ValueError("exit")
         if down_week is not None and close_above is None and close_below is None:
             raise ValueError("down_week")
+        raw_conditions = data.get("conditions", [])
+        raw_exits = data.get("exit_conditions", [])
+        if not isinstance(raw_conditions, list):
+            raise ValueError("conditions")
+        if not isinstance(raw_exits, list):
+            raise ValueError("exit_conditions")
+        conditions = tuple(_condition_from_mapping(item) for item in raw_conditions)
+        exit_conditions = tuple(_condition_from_mapping(item) for item in raw_exits)
         return Spec(
             mode="threshold",
             close_above_sma_weeks=close_above,
@@ -195,6 +199,8 @@ def spec_from_mapping(data: dict) -> Spec:
             above_long_averages=long,
             close_below_sma_weeks=close_below,
             down_week=down_week,
+            conditions=conditions,
+            exit_conditions=exit_conditions,
         )
     if mode == "dual_average":
         extra = set(data) - _DUAL_KEYS

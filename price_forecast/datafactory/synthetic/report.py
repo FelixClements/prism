@@ -6,21 +6,11 @@ import math
 from typing import Mapping, Sequence
 
 from price_forecast.data.candles import Candle, closes_from_candles
-from price_forecast.datafactory.remix import stylized_facts
+from price_forecast.datafactory.remix import FACT_KEYS, correlation, stylized_facts
 from price_forecast.datafactory.synthetic.label import REGIME_NAMES
 from price_forecast.datafactory.synthetic.paths import PathResult
 
-_FACT_KEYS = (
-    "daily_vol",
-    "weekly_vol",
-    "excess_kurtosis",
-    "daily_p01",
-    "hodl_max_dd",
-    "acf_daily_1",
-    "acf_weekly_1",
-    "acf_weekly_4",
-    "acf_weekly_8",
-)
+_FACT_KEYS = FACT_KEYS + ("range_abs_corr", "volume_abs_corr")
 
 
 def synthetic_report(
@@ -49,7 +39,7 @@ def synthetic_report(
             if name.endswith("quiet"):
                 quiet.append(shock)
     return {
-        "real": stylized_facts(closes_from_candles(candles)),
+        "real": candle_facts(candles),
         "synthetic": _summary(path.candles for path in paths),
         "control": _summary(controls),
         "regime_days": days,
@@ -82,8 +72,21 @@ def format_synthetic_report(report: Mapping[str, object]) -> str:
     return "\n".join(lines)
 
 
+def candle_facts(candles: Sequence[Candle]) -> dict[str, float]:
+    """Close facts, plus how wick range and volume track the size of the day's move."""
+    facts = stylized_facts(closes_from_candles(candles))
+    moves = [abs(math.log(candles[i].close / candles[i - 1].close)) for i in range(1, len(candles))]
+    ranges = [math.log(candle.high / candle.low) for candle in candles[1:]]
+    volumes = [candle.volume for candle in candles[1:]]
+    facts["range_abs_corr"] = correlation(ranges, moves)
+    facts["volume_abs_corr"] = (
+        math.nan if None in volumes else correlation(volumes, moves)
+    )
+    return facts
+
+
 def _summary(paths: Sequence[Sequence[Candle]]) -> dict[str, object]:
-    rows = [stylized_facts(closes_from_candles(path)) for path in paths]
+    rows = [candle_facts(path) for path in paths]
     median = {
         key: _upper_middle([row[key] for row in rows])
         for key in _FACT_KEYS

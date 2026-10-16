@@ -8,7 +8,9 @@ This spec records the design agreed in chat. The factory emits movies. It does n
 
 ## Goal
 
-Give Prism many Bitcoin-like daily histories that are not rearrangements of the real return tape. Each history is a chain of chapters. A chapter is one of six regimes. The regime's daily moves, streak lengths, successors, and bar shapes are measured on the real Coinbase file. The closes are new Student-t draws. The open, high, low, and volume are a real bar of that same regime, scaled onto the new close.
+Give Prism many Bitcoin-like daily histories in a new regime order. Each history is a chain of chapters. A chapter is one of six regimes. The regime's streak lengths and successors are measured on the real Coinbase file. A chapter's days are consecutive real days of that regime: each day keeps its own log-return, wick ratios, and volume, scaled onto the new close.
+
+**Revision 2026-10-15.** The first version drew closes from a per-regime Student-t and attached a random bar of the regime. Measured against the real tape it lost what stress tests need: fitted `df` near 2 forced a 20% daily cap that split the real −49% day into a staircase of equal days, wick range and volume were unrelated to the day's move (volume vs |return| correlation 0.07 against 0.58 real), and volatility clustering inside a regime was gone. Real-day blocks keep all three. The cost: no day is worse than the worst real day, the same limit remix has.
 
 SMAGateV1, CrashGateV1, and later rules can be pointed at these files in a later job. A cloud of scores on these files is a stress result. It is not out-of-sample proof. The regimes were fit on the same tape those rules were designed on.
 
@@ -103,22 +105,22 @@ Volatility on a labeled row is the sample standard deviation (`ddof=1`) of the 3
 
 The regime is the pair of those two answers. Consecutive labeled rows with the same regime are one run. The unlabeled prefix is not a run.
 
-`label.py` exposes the windows and the band as arguments. The defaults are 365, 30, and 0.25. The CLI always uses the defaults. Tests pass smaller windows.
+A run shorter than `MIN_RUN_BARS = 7` rows joins the run before it. A short first run joins the run after it. Without this, rows flicking across the volatility median gave 186 runs with 2–6 day medians on the real tape, so chapters were chatter, not regimes. With it the real tape has 58 runs, at least 7 per regime. The volatility median is still the raw median.
+
+`label.py` exposes the windows, the band, and the minimum run as arguments. The defaults are 365, 30, 0.25, and 7. The CLI always uses the defaults. Tests pass smaller windows.
 
 ## What the fit saves
 
 `fit.py` takes the labeled candles and returns one record used for every path:
 
-- Per regime, a Student-t on that regime's daily log-returns: `df`, `loc`, and `scale` from `scipy.stats.t.fit`.
-- Per regime, the list of run lengths. Each length is at least 1.
+- Per regime, its real runs as chapters. Each chapter is the run's rows in order, each row a `RealDay`: `log(P_t / P_{t-1})`, `high/close`, `low/close`, and `volume`.
 - Transition counts at run boundaries only. A run of 40 rows is one vote. The next regime is always a different regime. The last run in the file has no successor.
-- Per regime, the bar shapes of its labeled rows: `open/close`, `high/close`, `low/close`, and `volume`.
 
-The fit raises `ValueError`, names the regime, and writes nothing when any regime has fewer than 30 labeled rows, fewer than 2 runs, a sample volatility of 0, a blank volume, a non-finite Student-t parameter, or `df <= 2`. `df <= 2` means the fitted volatility is not a finite number. A regime that always ended in one particular next regime keeps that single successor. That is a real count, not a failure.
+The fit raises `ValueError`, names the regime, and writes nothing when any regime has fewer than 30 labeled rows, fewer than 2 runs, a sample volatility below `1e-12`, or a blank volume. A regime that always ended in one particular next regime keeps that single successor. That is a real count, not a failure.
 
 ## How one path is built
 
-The path has the same dates and the same number of rows as the source file. Row 0 is the source's first candle, unchanged. Every later close is invented.
+The path has the same dates and the same number of rows as the source file. Row 0 is the source's first candle, unchanged.
 
 The random stream for path `k` is:
 
@@ -129,15 +131,17 @@ numpy.random.Generator(numpy.random.PCG64(numpy.random.SeedSequence([seed, k, 0]
 Draws happen in this order:
 
 1. Pick a starting run with `rng.integers` over the full list of real runs. Each run is one ticket, whatever its length.
-2. Draw a length with `rng.integers` over that regime's length list.
-3. For each invented row in the chapter, draw one Student-t log-return with `scipy.stats.t.rvs(df, loc=loc, scale=scale, random_state=rng)`, set `close = previous_close * exp(return)`, then draw a bar shape with `rng.integers` over that regime's shapes.
-4. Scale the shape onto the new close: `open`, `high`, and `low` are the close times the stored ratios, and `volume` is the stored volume.
+2. Draw a length: the length of a chapter picked with `rng.integers` over that regime's chapters.
+3. Pick a source chapter of the regime with `rng.integers`, then a start offset inside it with `rng.integers`. Copy consecutive days from there. When the source chapter runs out, pick another chapter of the regime and continue from its first day.
+4. Each copied day sets `close = previous_close * exp(log_return - shift)`, `open = previous_close`, `high = max(close * high_ratio, open, close)`, `low = min(close * low_ratio, open, close)`, and keeps its volume.
 5. When the chapter ends and rows remain, draw the next regime from that regime's successor list (one entry per observed vote, then `rng.integers`), draw a new length, and repeat.
 6. A chapter that would pass the last row is cut to fit.
 
+`shift` is the mean log-return of every labeled day minus the source's average daily log-return. The labeled days skip the unlabeled prefix, so without it the paths would drift at a different rate than the source.
+
 The length counts invented rows only. Row 0 does not consume length. The sidecar still has one regime per row, including row 0. Row 0 records the starting regime and does not change row 0's candle.
 
-A non-finite return or a non-positive close raises `ValueError`. Paths are built in memory first. If any path fails, the command writes nothing, including paths that were already built in that run.
+A non-finite or non-positive close raises `ValueError`. Paths are built in memory first. If any path fails, the command writes nothing, including paths that were already built in that run.
 
 Path `k` depends on `SeedSequence([seed, k, 0])` only. Raising `--n-paths` does not change paths already produced for that seed. The same seed and path index produce the same candles and the same sidecar.
 
@@ -145,9 +149,9 @@ Path `k` depends on `SeedSequence([seed, k, 0])` only. Raising `--n-paths` does 
 
 The command prints a report and exits 0 whenever the files were written. A weak report does not delete files and does not change the exit status.
 
-Three columns, same facts remix already prints: `daily_vol`, `weekly_vol`, `excess_kurtosis`, `daily_p01`, `hodl_max_dd`, `acf_daily_1`, `acf_weekly_1`, `acf_weekly_4`, `acf_weekly_8`. The columns are the real series, the median across synthetic paths, and the median across a control. Weeks come from the existing `weekly_closes`.
+Three columns. The facts remix prints: `daily_vol`, `weekly_vol`, `excess_kurtosis`, `daily_p01`, `worst_day`, `hodl_max_dd`, `acf_daily_1`, `acf_weekly_1`, `acf_weekly_4`, `acf_weekly_8`, `momentum_8w` (correlation of the past 8 weeks' summed return with the next week), `variance_ratio_13w` (variance of 13-week sums over 13 times the weekly variance), `acf_abs_1`, `acf_abs_10`, `acf_abs_30` (volatility clustering), and `leverage` (correlation of a day's return with the next day's absolute return). Then two candle facts: `range_abs_corr` (log high/low range vs absolute return) and `volume_abs_corr` (volume vs absolute return). The columns are the real series, the median across synthetic paths, and the median across a control. `weekly_vol` uses the Sunday weeks of `weekly_closes`. The weekly autocorrelations, momentum, and variance ratio average all seven week-end days, because one end day alone swings real lag 1 from −0.02 to +0.09.
 
-The control uses the same dates and the same bar machinery, with one regime. Its Student-t and its bar shapes are fit on every labeled row pooled together. Its stream is `SeedSequence([seed, k, 1])`. Control paths are not written.
+The control uses the same dates and the same bar machinery, with one regime and no order: each row is one labeled real day drawn independently with `rng.integers`, with the same drift shift. Its stream is `SeedSequence([seed, k, 1])`. Control paths are not written.
 
 Under the table, print day counts for the six regimes and two checks, pooled across every invented row of every written path. Row 0 is excluded, because it has no invented return.
 
@@ -167,6 +171,8 @@ Tests build a small candle file in memory. They do not read `data/btc-usd-daily.
 - The same seed and path index rewrite the same candle CSV and the same sidecar. `--n-paths 2` leaves path 0 byte-for-byte the same as `--n-paths 1`.
 - On a fixture whose bull labeled-days step up and whose bear labeled-days step down, path 0's invented bull rows have a higher mean log-return than its invented bear rows, and its volatile rows have a wider sample volatility than its quiet rows.
 - Every invented candle has a finite price above 0, `low <= min(open, close) <= max(open, close) <= high`, and `volume >= 0`.
+- A real crash day stays one day. A chapter copies consecutive real days. Each day's wicks and volume travel with its return.
+- A run shorter than the minimum joins the run before it; a short first run joins the run after it.
 - Moved remix tests still pass against `price_forecast.datafactory.remix`.
 
 ## Success

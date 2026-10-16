@@ -95,7 +95,7 @@ def test_seed_reloads_and_does_not_touch_the_locked_file(monkeypatch, tmp_path):
     assert pool["members"][0]["trial_count"] == 0
 
 
-def test_stall_calls_the_pivot_once(monkeypatch, tmp_path):
+def test_stall_does_not_call_the_pivot(monkeypatch, tmp_path):
     coinbase = _install(monkeypatch, tmp_path)
     results = tmp_path / "results" / "search"
     calls = {"n": 0}
@@ -105,14 +105,13 @@ def test_stall_calls_the_pivot_once(monkeypatch, tmp_path):
         return {"id": "fund", "conditions": ["funding"]}
 
     monkeypatch.setattr(search_main, "pivot_runner", pivot)
-    monkeypatch.setattr(search_main, "mutate", lambda parent, **_kwargs: parent)
+    monkeypatch.setattr(search_main, "mutate_sell", lambda parent, **_kwargs: parent)
     code = search_main.main(
         ["--cycles", "51", "--coinbase", str(coinbase), "--results", str(results), "--path-count", "2"]
     )
     assert code == 0
-    assert calls["n"] == 1
-    side = (results / "side_pile.jsonl").read_text(encoding="utf-8")
-    assert "funding" in side
+    assert calls["n"] == 0
+    assert not (results / "side_pile.jsonl").exists()
 
 
 def test_gate_for_remembers_the_checker_for_one_file():
@@ -289,7 +288,7 @@ def test_restart_continues_the_cycle_count(monkeypatch, tmp_path):
         recorded.append(cycle)
         return parent
 
-    monkeypatch.setattr(search_main, "mutate", recording_mutate)
+    monkeypatch.setattr(search_main, "mutate_sell", recording_mutate)
     shared = ["--coinbase", str(coinbase), "--results", str(results), "--path-count", "2"]
     assert search_main.main(["--cycles", "2", *shared]) == 0
     assert search_main.main(["--cycles", "1", *shared]) == 0

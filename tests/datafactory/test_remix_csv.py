@@ -22,7 +22,7 @@ def _source() -> tuple[Candle, ...]:
     )
 
 
-def test_closes_match_remix_and_wick_is_the_landing_day():
+def test_closes_match_remix_and_wick_and_volume_are_the_landing_day():
     candles = _source()
     series = closes_from_candles(candles)
     expected = remix_daily_closes(series, n_paths=1, mean_block_bars=1, seed=0)[0]
@@ -34,7 +34,7 @@ def test_closes_match_remix_and_wick_is_the_landing_day():
     assert out[0].open == pytest.approx(90)
     assert out[0].high == pytest.approx(105)
     assert out[0].low == pytest.approx(80)
-    assert out[0].volume is None
+    assert out[0].volume == pytest.approx(1.0)
     source_returns = [
         math.log(candles[i + 1].close / candles[i].close) for i in range(len(candles) - 1)
     ]
@@ -52,7 +52,7 @@ def test_closes_match_remix_and_wick_is_the_landing_day():
         assert row.open / row.close == pytest.approx(landing.open / landing.close)
         assert row.low / row.close == pytest.approx(landing.low / landing.close)
         assert row.high / row.close != pytest.approx(start.high / start.close)
-        assert row.volume is None
+        assert row.volume == landing.volume
 
 
 def test_main_writes_one_pair_per_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -72,4 +72,4 @@ def test_main_writes_one_pair_per_path(tmp_path: Path, monkeypatch: pytest.Monke
         csv_path = dest / name
         assert csv_path.is_file()
         assert csv_path.with_suffix(".png").is_file()
-        assert all(row.volume is None for row in read_candles(csv_path))
+        assert all(row.volume is not None for row in read_candles(csv_path))

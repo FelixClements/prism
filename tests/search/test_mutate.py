@@ -22,15 +22,11 @@ def _differing_names(left: Spec, right: Spec) -> list[str]:
     return names
 
 
-def test_first_edit_switches_mode_to_the_first_dual_pair():
+def test_first_edit_stays_on_the_crashgate_shape():
     child = mutate(locked_crashgate(), cycle=0, rng=_Pick(0))
-    assert child == Spec(
-        mode="dual_average",
-        fast_weeks=4,
-        slow_weeks=12,
-        base_or_breakout=False,
-        above_long_averages=False,
-    )
+    assert child.mode == "threshold"
+    assert child.close_below_sma_weeks == 16
+    assert child.down_week == 0.10
 
 
 def test_same_mode_edit_changes_one_field():

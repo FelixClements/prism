@@ -32,10 +32,31 @@ def test_balanced_tape_fits_all_six_and_keeps_a_single_successor():
 
     assert set(model.regimes) == set(REGIME_NAMES)
     bull = model.regimes["bull_quiet"]
-    assert set(bull.successors) == {"sideways_quiet"}
+    assert set(bull.successors) == {"bear_quiet"}
     assert sum(len(item.successors) for item in model.regimes.values()) == len(model.runs) - 1
-    assert model.regimes["bull_quiet"].loc > 0.05
-    assert model.regimes["bear_quiet"].loc < -0.05
+    assert _mean_return(model, "bull_quiet") > 0.05
+    assert _mean_return(model, "bear_quiet") < -0.05
+    for name, length in model.runs:
+        assert length in [len(chapter) for chapter in model.regimes[name].chapters]
+
+
+def _mean_return(model, name: str) -> float:
+    days = [day for chapter in model.regimes[name].chapters for day in chapter]
+    return sum(day.log_return for day in days) / len(days)
+
+
+def test_each_real_day_keeps_its_own_wicks_and_volume():
+    candles = list(balanced_tape())
+    candles[200] = Candle(candles[200].day, candles[200].close * 0.8, candles[200].close * 1.3,
+                          candles[200].open, candles[200].close, 77.0)
+    labeling = label_candles(tuple(candles), trend_bars=4, vol_bars=2)
+    model = fit_tape(tuple(candles), labeling)
+    days = [day for regime in model.regimes.values() for chapter in regime.chapters for day in chapter]
+    marked = [day for day in days if day.volume == 77.0]
+    assert len(marked) == 1
+    assert marked[0].high_ratio == pytest.approx(1.3)
+    assert marked[0].low_ratio == pytest.approx(0.8)
+    assert marked[0].log_return == pytest.approx(math.log(candles[200].close / candles[199].close))
 
 
 def test_thin_regime_names_itself():
@@ -68,17 +89,5 @@ def test_blank_volume_names_the_regime():
 
 def test_zero_volatility_names_the_regime():
     candles, labeling = _labeled(0.01)
-    with pytest.raises(ValueError, match="bull_quiet"):
-        fit_tape(candles, labeling)
-
-
-def test_student_t_df_at_or_below_two_names_the_regime(monkeypatch):
-    candles = balanced_tape()
-    labeling = label_candles(candles, trend_bars=4, vol_bars=2)
-
-    def _flat_df(_returns):
-        return (2.0, 0.0, 0.01)
-
-    monkeypatch.setattr("price_forecast.datafactory.synthetic.fit.t.fit", _flat_df)
     with pytest.raises(ValueError, match="bull_quiet"):
         fit_tape(candles, labeling)

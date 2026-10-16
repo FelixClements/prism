@@ -93,6 +93,21 @@ def baseline_is_usable(baseline: PathMetrics) -> bool:
     return all(value is not None and math.isfinite(value) and value != 0.0 for value in values)
 
 
+def beats_best(child: dict, best: dict) -> bool:
+    edge = child.get("edge")
+    remix = child.get("remix")
+    synthetic = child.get("synthetic")
+    if child.get("fragile") or edge is None or edge <= 0.0:
+        return False
+    if remix is None or synthetic is None or best.get("remix") is None or best.get("synthetic") is None:
+        return False
+    return (
+        child["breeding"] > best["breeding"]
+        and remix > best["remix"]
+        and synthetic > best["synthetic"]
+    )
+
+
 def is_fragile(metrics: PathMetrics) -> bool:
     if metrics.end_dollars - metrics.start_dollars <= 0.0 or metrics.edge <= 0.0:
         return False
@@ -109,13 +124,8 @@ def stress_result(
     coinbase_edge: float,
     remix_edges: list[float],
     synthetic_edges: list[float],
-    *,
-    require_remix: bool = True,
-) -> tuple[bool, float | None, float]:
+) -> tuple[bool, float, float]:
     synthetic_mean = sum(synthetic_edges) / len(synthetic_edges)
-    if not require_remix:
-        passed = coinbase_edge > 0.0 and synthetic_mean >= 0.5 * coinbase_edge
-        return passed, None, synthetic_mean
     remix_mean = sum(remix_edges) / len(remix_edges)
     passed = coinbase_edge > 0.0 and remix_mean >= 0.5 * coinbase_edge and synthetic_mean >= 0.5 * coinbase_edge
     return passed, remix_mean, synthetic_mean

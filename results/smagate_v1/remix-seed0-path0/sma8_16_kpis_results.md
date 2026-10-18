@@ -6,16 +6,14 @@ This is a historical backtest of one execution design, not a product rule. V1 is
 KPI snapshot: start $10,000.00; 2018-04-22 → 2026-09-27 (441 comparable weeks after SMA-16 warmup); strategy end $212,967.96 vs HODL $180,465.16; total return 2029.68% vs HODL 1704.65%; max DD -85.14% vs HODL -87.56%; alpha +325.03 pp; exposure 57.82%.
 
 Caveats:
-- Same-bar weekly close fill: SMA at week t includes close t and the fill is close t. That is contemporaneous fill, not future lookahead. It is more optimistic than the frozen t+1 bakeoff.
-- Start in cash (FLAT) until the first close > SMA-8 after SMA-16 exists. The frozen $10k crash-window tables start in BTC.
-- 0.15% of notional on each fill. Frozen bakeoff uses 10 bps; this runner now also uses strict > / < (on the line is HOLD).
-- Not the frozen t+1 bakeoff (archived at `archive/frozen_t1_bakeoff/`).
+- Same-bar weekly close fill: SMA at week t includes close t and the fill is close t. That is contemporaneous fill, not future lookahead. It is more optimistic than a next-bar (t+1) fill.
+- Start in cash (FLAT) until the first close > SMA-8 after SMA-16 exists.
+- 0.15% of notional on each fill. Strict > / < (on the line is HOLD).
 - Full-sample KPIs in this table. Monthly rows and the 2022 / Oct 2025–Jun 2026 chapters are in `sma8_16_kpis_monthly.md` (also `.csv`). A full-sample dollar figure can still hide a bad crash window; SMAGateV1 still takes ~30-40% crash chapters. Read those months.
 
-Same-bar fill at the weekly close (more optimistic than the frozen t+1 bakeoff).
-Cost is 0.15% per fill vs the frozen bakeoff's 10 bps. Entry uses close > SMA-8;
-exit uses close < SMA-16 (on the line is HOLD). Do not compare these
-dollars to `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` as if the rules were the same.
+Same-bar fill at the weekly close (more optimistic than a next-bar fill).
+Cost is 0.15% per fill. Entry uses close > SMA-8;
+exit uses close < SMA-16 (on the line is HOLD).
 
 Date range: 2018-04-22 → 2026-09-27 (441 comparable weekly bars after SMA-16 warmup).
 Start $: $10,000.00

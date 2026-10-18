@@ -29,7 +29,6 @@ from price_forecast.search.score import (
     stress_result,
 )
 from price_forecast.search.spec import locked_crashgate, spec_to_mapping
-from price_forecast.search.translate import Unmapped
 from price_forecast.strategies.crashgate_entry import BaseBreakoutGate
 from price_forecast.strategies.indicators import weekly_bars
 
@@ -144,89 +143,6 @@ def _ensure_family(directory: Path, coinbase: Path, count: int, builder) -> None
         builder(coinbase, count)
     if any(not path.is_file() for path in paths):
         raise FileNotFoundError(directory)
-
-
-def _load_yaml(path: Path):
-    import yaml
-
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
-
-
-def _dump_yaml(mapping: dict) -> str:
-    import yaml
-
-    return yaml.safe_dump(mapping, sort_keys=True)
-
-
-def pivot_runner(results: Path, champion_spec) -> dict:
-    dest = results / "pivots"
-    dest.mkdir(parents=True, exist_ok=True)
-    draft_path = dest / "champion_draft.yaml"
-    diagnosis_path = dest / "diagnosis.json"
-    draft = {
-        "id": "crashgate_search",
-        "hypothesis_type": "breakout",
-        "mechanism_tag": "behavior",
-        "entry_family": "pivot_breakout",
-    }
-    draft.update(spec_to_mapping(champion_spec))
-    draft_path.write_text(_dump_yaml(draft), encoding="utf-8")
-    diagnosis_path.write_text(
-        json.dumps(
-            {
-                "strategy_id": "crashgate_search",
-                "recommendation": "pivot",
-                "score_trajectory": [],
-                "triggers_fired": [
-                    {
-                        "trigger": "improvement_plateau",
-                        "severity": "medium",
-                        "message": "champion breeding number did not rise for 50 cycles",
-                    }
-                ],
-            }
-        ),
-        encoding="utf-8",
-    )
-    script = Path.home() / ".agents" / "skills" / "strategy-pivot-designer" / "scripts" / "generate_pivots.py"
-    before = {path.name for path in dest.glob("pivot_manifest_*.json")}
-    try:
-        subprocess.run(
-            [
-                sys.executable,
-                str(script),
-                "--diagnosis",
-                str(diagnosis_path),
-                "--strategy",
-                str(draft_path),
-                "--max-pivots",
-                "1",
-                "--output-dir",
-                str(dest),
-            ],
-            check=True,
-        )
-    except subprocess.CalledProcessError as exc:
-        raise Unmapped("pivot script failed") from exc
-    new_names = sorted(
-        path.name for path in dest.glob("pivot_manifest_*.json") if path.name not in before
-    )
-    if not new_names:
-        raise Unmapped("pivot script failed")
-    try:
-        manifest = json.loads((dest / new_names[-1]).read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise Unmapped("pivot script failed") from exc
-    drafts = manifest.get("drafts") if isinstance(manifest, dict) else None
-    if not isinstance(drafts, list) or not drafts or not isinstance(drafts[0], dict):
-        raise Unmapped("pivot script failed")
-    chosen = dest / str(drafts[0].get("path", ""))
-    if not chosen.is_file():
-        raise Unmapped("pivot script failed")
-    loaded = _load_yaml(chosen)
-    if not isinstance(loaded, dict):
-        raise Unmapped("pivot script failed")
-    return loaded
 
 
 def _metrics_dict(metrics: PathMetrics) -> dict:
@@ -427,7 +343,6 @@ def main(argv: list[str] | None = None) -> int:
     stress = _load_stress(remix_dir, synthetic_dir, args.path_count)
     pool_path = results / "pool.json"
     ledger_path = results / "ledger.jsonl"
-    side_path = results / "side_pile.jsonl"
     pool = load_pool(pool_path)
     if not pool["members"]:
         baseline = score_file(coinbase_candles, locked_crashgate(), gate)

@@ -14,3 +14,7 @@ data/btc-usd-daily.png
 data/remix/
 data/synthetic/
 results/search/
+
+.agents/
+.cursor/
+reports/

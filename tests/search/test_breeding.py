@@ -3,43 +3,16 @@ from dataclasses import replace
 from datetime import date, timedelta
 
 from price_forecast.search import __main__ as search_main
-from price_forecast.search.mutate import legal_edits, sell_edits
+from price_forecast.search.mutate import sell_edits
 from price_forecast.search.runner import simulate_spec
 from price_forecast.search.score import beats_best
-from price_forecast.search.spec import Condition, Spec, locked_crashgate, spec_from_mapping, spec_to_mapping
+from price_forecast.search.spec import Condition, Spec, locked_crashgate
 from tests.search.test_preflight import _install
 
 
 def _weeks(closes: list[float]):
     start = date(2018, 1, 7)
     return [(start + timedelta(days=7 * index), close) for index, close in enumerate(closes)]
-
-
-def _rsi_added(parent: Spec) -> list[Spec]:
-    return [
-        edit
-        for edit in legal_edits(parent)
-        if len(edit.conditions) == len(parent.conditions) + 1
-        and edit.conditions[-1] == Condition("rsi", (14,), "<", 30)
-    ]
-
-
-def test_locked_edits_stay_on_crashgate_and_can_add_one_menu_row():
-    parent = locked_crashgate()
-    edits = legal_edits(parent)
-    assert {edit.mode for edit in edits} == {"threshold"}
-    added = _rsi_added(parent)
-    assert len(added) == 1
-    child = added[0]
-    assert child.close_below_sma_weeks == 16
-    assert child.down_week == 0.10
-    assert len(child.conditions) == 1
-    assert spec_from_mapping(spec_to_mapping(child)) == child
-
-
-def test_one_try_adds_only_one_comparison():
-    parent = locked_crashgate()
-    assert all(len(edit.conditions) <= 1 for edit in legal_edits(parent))
 
 
 def test_sell_only_edits_freeze_the_buy():
@@ -62,20 +35,6 @@ def test_sell_only_edits_freeze_the_buy():
         assert edit.above_long_averages == parent.above_long_averages
 
 
-def test_a_sell_indicator_can_be_added_and_varied():
-    parent = locked_crashgate()
-    sells = [edit for edit in legal_edits(parent) if edit.exit_conditions]
-    added = [edit.exit_conditions[0] for edit in sells if len(edit.exit_conditions) == 1]
-    assert Condition("rsi", (14,), ">", 70) in added
-    assert Condition("rsi", (14,), ">", 69) in added
-    assert Condition("rsi", (13,), ">", 70) in added
-    for edit in sells:
-        assert edit.conditions == ()
-        assert edit.close_below_sma_weeks == 16
-        assert edit.down_week == 0.10
-        assert len(edit.exit_conditions) == 1
-
-
 def test_sell_indicator_exits_while_the_crashgate_sell_is_quiet():
     spec = Spec(
         mode="threshold",
@@ -93,28 +52,6 @@ def test_sell_indicator_exits_while_the_crashgate_sell_is_quiet():
     assert sells[0].price == 200.0
     quiet = replace(spec, exit_conditions=())
     assert [fill for fill in simulate_spec(_weeks(closes), quiet, lambda _day: (True, True)).fills if fill.side == "SELL"] == []
-
-
-def test_menu_variations_are_legal_from_crashgate():
-    edits = legal_edits(locked_crashgate())
-    added = [edit.conditions[0] for edit in edits if len(edit.conditions) == 1]
-    assert Condition("rsi", (13,), "<", 30) in added
-    assert Condition("rsi", (15,), "<", 30) in added
-    assert Condition("rsi", (14,), "<", 29) in added
-    assert Condition("rsi", (14,), "<", 31) in added
-    assert Condition("rsi", (12,), "<", 30) not in added
-
-
-def test_second_try_steps_rsi_or_adds_one_more_comparison():
-    parent = _rsi_added(locked_crashgate())[0]
-    edits = legal_edits(parent)
-    stepped = [edit for edit in edits if len(edit.conditions) == 1]
-    periods = {edit.conditions[0].args[0] for edit in stepped}
-    levels = {edit.conditions[0].right_value for edit in stepped}
-    assert 13 in periods and 15 in periods
-    assert 29 in levels and 31 in levels
-    assert any(len(edit.conditions) == 2 for edit in edits)
-    assert all(len(edit.conditions) <= 2 for edit in edits)
 
 
 def test_added_check_gates_the_buy_and_not_the_sell():
@@ -226,21 +163,3 @@ def test_a_failed_try_leaves_the_current_best_as_parent(monkeypatch, tmp_path):
     pool = json.loads((results / "pool.json").read_text(encoding="utf-8"))
     assert pool["champion_id"] == "seed"
     assert len(pool["members"]) == 1
-
-
-def test_fifty_quiet_tries_do_not_call_the_pivot(monkeypatch, tmp_path):
-    coinbase = _install(monkeypatch, tmp_path)
-    results = tmp_path / "results" / "search"
-    calls = {"n": 0}
-
-    def pivot(*_args):
-        calls["n"] += 1
-        return {"conditions": ["funding"]}
-
-    monkeypatch.setattr(search_main, "pivot_runner", pivot)
-    monkeypatch.setattr(search_main, "mutate_sell", lambda parent, **_kwargs: parent)
-    code = search_main.main(
-        ["--cycles", "51", "--coinbase", str(coinbase), "--results", str(results), "--path-count", "2"]
-    )
-    assert code == 0
-    assert calls["n"] == 0

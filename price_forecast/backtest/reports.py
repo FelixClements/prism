@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import io
 import math
-from datetime import date, datetime, timezone
 from typing import Sequence
 
 from price_forecast.data.series import (
@@ -366,22 +365,17 @@ def format_report(report: KpiReport) -> str:
         "",
         "Caveats:",
         "- Same-bar weekly close fill: SMA at week t includes close t and the fill is close t. "
-        "That is contemporaneous fill, not future lookahead. It is more optimistic than the frozen t+1 bakeoff.",
-        "- Start in cash (FLAT) until the first close > SMA-8 after SMA-16 exists. "
-        "The frozen $10k crash-window tables start in BTC.",
-        "- 0.15% of notional on each fill. Frozen bakeoff uses 10 bps; this runner now also "
-        "uses strict > / < (on the line is HOLD).",
-        "- Not the frozen t+1 bakeoff (archived at `archive/frozen_t1_bakeoff/`).",
+        "That is contemporaneous fill, not future lookahead. It is more optimistic than a next-bar (t+1) fill.",
+        "- Start in cash (FLAT) until the first close > SMA-8 after SMA-16 exists.",
+        "- 0.15% of notional on each fill. Strict > / < (on the line is HOLD).",
         "- Full-sample KPIs in this table. Monthly rows and the 2022 / Oct 2025–Jun 2026 "
         "chapters are in `sma8_16_kpis_monthly.md` (also `.csv`). A full-sample dollar "
         "figure can still hide a bad crash window; SMAGateV1 still takes ~30-40% crash "
         "chapters. Read those months.",
         "",
-        "Same-bar fill at the weekly close (more optimistic than the frozen t+1 bakeoff).",
-        "Cost is 0.15% per fill vs the frozen bakeoff's 10 bps. Entry uses close > SMA-8;",
-        "exit uses close < SMA-16 (on the line is HOLD). Do not compare these",
-        "dollars to `archive/frozen_t1_bakeoff/sma_asymmetric_10k_results.md` "
-        "as if the rules were the same.",
+        "Same-bar fill at the weekly close (more optimistic than a next-bar fill).",
+        "Cost is 0.15% per fill. Entry uses close > SMA-8;",
+        "exit uses close < SMA-16 (on the line is HOLD).",
         "",
         f"Date range: {report.start.isoformat()} → {report.end.isoformat()} "
         f"({report.n_comparable_weeks} comparable weekly bars after SMA-16 warmup).",

@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import io
 import math
-from datetime import date, datetime, timezone
 from typing import Sequence
 
 from price_forecast.data.series import (

@@ -20,9 +20,6 @@ from price_forecast.forecast.chronos import ChronosPredictor
 from price_forecast.forecast.harness import HORIZONS, WINDOWS, HorizonResult, evaluate
 from price_forecast.forecast.predictors import LastValuePredictor, ZeroReturnPredictor
 
-RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
-
-
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="Walk-forward bakeoff on a candle CSV. Does not download."

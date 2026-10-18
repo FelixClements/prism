@@ -13,8 +13,8 @@ from price_forecast.backtest.kpis import (
     cagr,
     compute_kpis,
     mar_ratio,
+    _monthly_from_paths,
     max_drawdown,
-    monthly_kpis,
     profit_factor,
     sortino_ratio,
 )
@@ -25,19 +25,17 @@ from price_forecast.backtest.reports import (
     format_report,
 )
 from price_forecast.strategies.signals import sma_at
-from price_forecast.strategies.smagate_v1 import (
-    BUY_WEEKS,
-    FILL_COST,
-    SELL_WEEKS,
-    STARTING_DOLLARS,
-    WHIPSAW_MAX_HOLDING_BARS,
-)
+from price_forecast.strategies.smagate_v1 import FILL_COST, STARTING_DOLLARS
 
 
 def _weeks_from_closes(
     closes: Sequence[float], *, start: date = date(2022, 1, 9)
 ) -> list[tuple[date, float]]:
     return [(start + timedelta(weeks=i), close) for i, close in enumerate(closes)]
+
+
+def _monthly(weeks: Sequence[tuple[date, float]]):
+    return _monthly_from_paths(simulate_strategy(weeks), simulate_hodl(weeks))
 
 
 def test_no_trade_before_both_sma8_and_sma16_exist():
@@ -371,7 +369,7 @@ def test_monthly_rows_group_by_calendar_month_of_weekly_bar_date():
     # Comparable weeks: Jan 16/23/30 and Feb 6/13.
     weeks = _month_span_weeks([110.0, 120.0, 130.0, 140.0])
 
-    rows = monthly_kpis(weeks)
+    rows = _monthly(weeks)
 
     assert [row.year_month for row in rows] == ["2022-01", "2022-02"]
     assert rows[0].n_weeks == 3
@@ -386,8 +384,8 @@ def test_month_end_kpis_do_not_use_later_weeks():
     full = _month_span_weeks(extra_jan_feb_mar)
     through_february = [(day, close) for day, close in full if day < date(2022, 3, 1)]
 
-    full_rows = monthly_kpis(full)
-    truncated_rows = monthly_kpis(through_february)
+    full_rows = _monthly(full)
+    truncated_rows = _monthly(through_february)
     full_jan_feb = [row for row in full_rows if row.year_month in {"2022-01", "2022-02"}]
 
     assert any(row.year_month == "2022-03" for row in full_rows)
@@ -412,7 +410,7 @@ def test_month_end_kpis_do_not_use_later_weeks():
 
 def test_monthly_returns_compound_to_full_period_wealth():
     weeks = _month_span_weeks([110.0, 90.0, 120.0, 80.0, 130.0, 70.0, 140.0])
-    rows = monthly_kpis(weeks)
+    rows = _monthly(weeks)
     report = compute_kpis(weeks)
 
     strategy_wealth = STARTING_DOLLARS
@@ -450,7 +448,7 @@ def test_monthly_returns_compound_to_full_period_wealth():
 def test_intra_month_max_dd_uses_only_that_months_equity():
     # HODL is always long, so January equity tracks 100 → 110 → 88.
     weeks = _month_span_weeks([110.0, 88.0, 88.0, 88.0])
-    rows = monthly_kpis(weeks)
+    rows = _monthly(weeks)
     hodl = simulate_hodl(weeks)
 
     jan = next(row for row in rows if row.year_month == "2022-01")
@@ -473,8 +471,8 @@ def test_one_or_two_weekly_points_still_get_a_month_max_dd():
         [100.0] * 15 + [110.0, 88.0], start=date(2021, 10, 10)
     )
 
-    one_rows = monthly_kpis(one_point)
-    two_rows = monthly_kpis(two_points)
+    one_rows = _monthly(one_point)
+    two_rows = _monthly(two_points)
     jan_one = next(row for row in one_rows if row.year_month == "2022-01")
     jan_two = next(row for row in two_rows if row.year_month == "2022-01")
 
@@ -488,7 +486,7 @@ def test_one_or_two_weekly_points_still_get_a_month_max_dd():
 def test_round_trips_and_fees_land_in_the_sell_month_not_the_buy_month():
     # Buy first comparable January bar; sell first February bar (close 50 < SMA-16).
     weeks = _month_span_weeks([110.0, 120.0, 50.0, 50.0])
-    rows = monthly_kpis(weeks)
+    rows = _monthly(weeks)
     path = simulate_strategy(weeks)
     jan = next(row for row in rows if row.year_month == "2022-01")
     feb = next(row for row in rows if row.year_month == "2022-02")
@@ -516,7 +514,7 @@ def test_round_trips_and_fees_land_in_the_sell_month_not_the_buy_month():
 
 def test_monthly_csv_and_markdown_label_monthly_vs_cumulative_columns():
     weeks = _month_span_weeks([110.0, 120.0, 50.0, 50.0])
-    rows = monthly_kpis(weeks)
+    rows = _monthly(weeks)
     report = compute_kpis(weeks)
     csv_text = format_monthly_csv(rows)
     md_text = format_monthly_markdown(report, rows)

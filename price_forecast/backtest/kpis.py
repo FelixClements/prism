@@ -377,20 +377,6 @@ def _monthly_from_paths(strategy: EquityPath, hodl: EquityPath) -> list[MonthKpi
     return rows
 
 
-def monthly_kpis(
-    weeks: Sequence[tuple[date, float]],
-    *,
-    starting_dollars: float = STARTING_DOLLARS,
-    cost: float = FILL_COST,
-) -> list[MonthKpis]:
-    """Per calendar month of the weekly bar date, plus cumulative-to-date KPIs."""
-    strategy = simulate_strategy(
-        weeks, starting_dollars=starting_dollars, cost=cost
-    )
-    hodl = simulate_hodl(weeks, starting_dollars=starting_dollars, cost=cost)
-    return _monthly_from_paths(strategy, hodl)
-
-
 def chapter_window(
     strategy: EquityPath,
     hodl: EquityPath,

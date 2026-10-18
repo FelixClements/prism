@@ -35,7 +35,6 @@ def _install(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(search_main, "build_synthetic", build("synthetic"))
     monkeypatch.setattr(search_main, "smoke_skills", lambda: None)
     monkeypatch.setattr(search_main, "gate_for", lambda _candles: (lambda _day: (True, True)))
-    monkeypatch.setattr(search_main, "pivot_runner", lambda *_args: {"conditions": ["funding"]})
     monkeypatch.setattr(search_main, "score_file", lambda *_args, **_kwargs: _canned_metrics())
     return coinbase
 
@@ -95,23 +94,14 @@ def test_seed_reloads_and_does_not_touch_the_locked_file(monkeypatch, tmp_path):
     assert pool["members"][0]["trial_count"] == 0
 
 
-def test_stall_does_not_call_the_pivot(monkeypatch, tmp_path):
+def test_stalled_search_still_finishes(monkeypatch, tmp_path):
     coinbase = _install(monkeypatch, tmp_path)
     results = tmp_path / "results" / "search"
-    calls = {"n": 0}
-
-    def pivot(*_args):
-        calls["n"] += 1
-        return {"id": "fund", "conditions": ["funding"]}
-
-    monkeypatch.setattr(search_main, "pivot_runner", pivot)
     monkeypatch.setattr(search_main, "mutate_sell", lambda parent, **_kwargs: parent)
     code = search_main.main(
         ["--cycles", "51", "--coinbase", str(coinbase), "--results", str(results), "--path-count", "2"]
     )
     assert code == 0
-    assert calls["n"] == 0
-    assert not (results / "side_pile.jsonl").exists()
 
 
 def test_gate_for_remembers_the_checker_for_one_file():
@@ -196,87 +186,6 @@ def test_stress_files_use_their_own_gate(monkeypatch):
     assert by_list[id(remix)] is remember(remix)
     assert by_list[id(synthetic)] is remember(synthetic)
     assert by_list[id(remix)] is not remember(coinbase)
-
-
-def test_pivot_runner_opens_the_manifest_from_this_run(monkeypatch, tmp_path):
-    results = tmp_path / "results"
-    pivot = results / "pivots"
-    old_dir = pivot / "pivot_drafts" / "research_only"
-    old_dir.mkdir(parents=True)
-    old_yaml = old_dir / "aaa_old.yaml"
-    old_yaml.write_text(
-        '{"id": "stale", "conditions": ["weekly_close > sma_20"]}\n',
-        encoding="utf-8",
-    )
-    (pivot / "pivot_manifest_crashgate_search_20000101_000000.json").write_text(
-        json.dumps({"drafts": [{"path": "pivot_drafts/research_only/aaa_old.yaml"}]}),
-        encoding="utf-8",
-    )
-
-    def fake_run(_command, check=True):
-        new_yaml = old_dir / "zzz_new.yaml"
-        new_yaml.write_text(
-            '{"id": "fresh", "conditions": ["weekly_close > sma_8"]}\n',
-            encoding="utf-8",
-        )
-        (pivot / "pivot_manifest_crashgate_search_20261004_000000.json").write_text(
-            json.dumps(
-                {"drafts": [{"path": "pivot_drafts/research_only/zzz_new.yaml"}]}
-            ),
-            encoding="utf-8",
-        )
-        return None
-
-    monkeypatch.setattr(search_main.subprocess, "run", fake_run)
-    monkeypatch.setattr(search_main, "_dump_yaml", lambda mapping: json.dumps(mapping))
-    monkeypatch.setattr(
-        search_main,
-        "_load_yaml",
-        lambda path: json.loads(Path(path).read_text(encoding="utf-8")),
-    )
-    loaded = search_main.pivot_runner(results, locked_crashgate())
-    assert loaded == {"id": "fresh", "conditions": ["weekly_close > sma_8"]}
-    assert old_yaml.is_file()
-    assert "stale" in old_yaml.read_text(encoding="utf-8")
-
-
-def test_pivot_request_uses_the_writers_words(monkeypatch, tmp_path):
-    results = tmp_path / "results"
-    captured = {}
-
-    def fake_run(_command, check=True):
-        dest = results / "pivots"
-        captured["diagnosis"] = json.loads((dest / "diagnosis.json").read_text(encoding="utf-8"))
-        captured["draft"] = json.loads((dest / "champion_draft.yaml").read_text(encoding="utf-8"))
-        idea = dest / "pivot_drafts" / "research_only"
-        idea.mkdir(parents=True, exist_ok=True)
-        (idea / "fresh.yaml").write_text(
-            '{"id": "fresh", "conditions": ["weekly_close > sma_8"]}\n',
-            encoding="utf-8",
-        )
-        (dest / "pivot_manifest_crashgate_search_20261005_000000.json").write_text(
-            json.dumps({"drafts": [{"path": "pivot_drafts/research_only/fresh.yaml"}]}),
-            encoding="utf-8",
-        )
-        return None
-
-    monkeypatch.setattr(search_main.subprocess, "run", fake_run)
-    monkeypatch.setattr(search_main, "_dump_yaml", lambda mapping: json.dumps(mapping))
-    monkeypatch.setattr(
-        search_main,
-        "_load_yaml",
-        lambda path: json.loads(Path(path).read_text(encoding="utf-8")),
-    )
-    search_main.pivot_runner(results, locked_crashgate())
-    trigger = captured["diagnosis"]["triggers_fired"][0]["trigger"]
-    draft = captured["draft"]
-    assert trigger == "improvement_plateau"
-    assert draft["id"] == "crashgate_search"
-    assert draft["hypothesis_type"] == "breakout"
-    assert draft["mechanism_tag"] == "behavior"
-    assert draft["entry_family"] == "pivot_breakout"
-    assert draft["mode"] == "threshold"
-    assert draft["close_above_sma_weeks"] == 8
 
 
 def test_restart_continues_the_cycle_count(monkeypatch, tmp_path):

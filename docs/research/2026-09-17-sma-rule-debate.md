@@ -3,6 +3,7 @@
 **Date:** 2026-09-17  
 **Scope:** Product/research note for Prism. Not investment advice. No recommendation to buy, sell, hedge, or size a Bitcoin position. This is which *already-backtested* weekly in/out rule to freeze as the v1 product action.  
 **Question:** Symmetric SMA-8, buy6/sell40, or a mid pair (buy8/sell16 if the tables support it) — which one matches the user’s stated dump and the “~80% of buy-and-hold is good enough” bar?  
+**History:** `archive/frozen_t1_bakeoff/`, `price_forecast/backtest/t1.py`, and the `asymmetric_sma_signal` family were removed in the 2026-10-18 repo cleanup. Paths below name files as of commit `93016df`; read them with `git show 93016df:<path>`.  
 **No new grid search. No product code.** Numbers below are copied from the existing result files. Full-sample dollars from `sma8_10k` and from the asymmetric 40-week-warmup window are **not** the same window.
 
 ---
@@ -154,6 +155,6 @@ The user named the locked best-so-far **SMAGateV1** (2026-09-18). Runner is `pyt
 
 Economically the product rule is still buy-8 / sell-16. The original freeze in this note used the weekly bakeoff execution: signal at week t, fill at week t+1, 10 bps, start in BTC, strict inequalities. SMAGateV1 is what the user prefers **if they trade at the weekly close** (contemporaneous fill, not next-week fill). Not investment advice. Still takes ~30-40% crash chapters.
 
-**SMAGateV1 is the only live freeze.** The t+1 bakeoff is archived at `archive/frozen_t1_bakeoff/` (2026-09-20). Do not use it for new work. t+1 numbers in this note still stand for that old execution assumption. Do not mix the two scoreboards. The KPI runner also does not report 2022 and Oct 2025–Jun 2026 max DD as separate frozen windows; that dump-goal check still lives on the archived t+1 $10k tables.
+**SMAGateV1 is the only live freeze.** The t+1 bakeoff was archived on 2026-09-20 and removed on 2026-10-18 (see History above). Do not use it for new work. t+1 numbers in this note still stand for that old execution assumption. Do not mix the two scoreboards. The KPI runner also does not report 2022 and Oct 2025–Jun 2026 max DD as separate frozen windows; that dump-goal check lived on the removed t+1 $10k tables.
 
-Source: `results/sma8_16_kpis_results.md`. Archive: `archive/frozen_t1_bakeoff/README.md`.
+Source: `results/sma8_16_kpis_results.md`.

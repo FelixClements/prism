@@ -347,7 +347,7 @@ def test_report_table_marks_hodl_trade_kpis_na():
 
     assert "Not investment advice" in text
     assert "SMAGateV1" in text
-    assert "not the frozen t+1 bakeoff" in text.lower()
+    assert "more optimistic than a next-bar" in text.lower()
     assert "~30-40%" in text
     assert "Strategy" in text and "Buy & Hold" in text
     assert "n/a" in text

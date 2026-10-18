@@ -34,15 +34,6 @@ def test_results_dir_is_repo_results_folder():
     assert RESULTS_DIR == root / "results"
 
 
-def test_smagate_source_does_not_import_t1_or_archive():
-    text = (
-        Path(__file__).resolve().parents[2]
-        / "price_forecast/strategies/smagate_v1.py"
-    ).read_text(encoding="utf-8")
-    assert "backtest.t1" not in text
-    assert "archive" not in text
-
-
 def test_engine_is_imported_only_inside_main():
     source = (
         Path(__file__).resolve().parents[2]

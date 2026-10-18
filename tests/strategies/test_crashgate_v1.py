@@ -63,7 +63,6 @@ def test_source_does_not_import_backtest_at_module_level():
     ).read_text(encoding="utf-8")
     header, _, _rest = text.partition("def weekly_sessions")
     assert "price_forecast.backtest" not in header
-    assert "backtest.t1" not in text
 
 
 @pytest.mark.skipif(not BTC_USD_DAILY_CSV.is_file(), reason="local Coinbase candles are absent")

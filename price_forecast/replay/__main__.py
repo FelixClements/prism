@@ -19,10 +19,11 @@ from typing import Sequence
 
 import numpy as np
 
-from price_forecast.data.candles import BTC_USD_DAILY_CSV, Candle, read_candles
+from price_forecast.data.candles import BTC_USD_DAILY_CSV, read_candles
 from price_forecast.replay.benchmarks import RandomTiming, constant_exposure, hodl, random_timing
 from price_forecast.replay.engine import FILL_COST, Metrics, metrics, replay, weekly_returns
 from price_forecast.replay.robustness import Variant, describe, anchor_sweep, neighbour_sweep
+from price_forecast.replay.rules import STRATEGIES, LazyGate
 from price_forecast.replay.selection import (
     DeflatedSharpe,
     Pbo,
@@ -32,7 +33,7 @@ from price_forecast.replay.selection import (
     sharpe_variance_per_week,
 )
 from price_forecast.search.runner import SpecSignal, simulate_spec
-from price_forecast.search.spec import Spec, locked_crashgate, spec_from_mapping, spec_to_mapping
+from price_forecast.search.spec import spec_from_mapping, spec_to_mapping
 from price_forecast.strategies.indicators import weekly_bars
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,10 +42,6 @@ CACHE_DIR = RESULTS_DIR / "cache"
 LEDGER = ROOT / "results" / "search" / "ledger.jsonl"
 POOL = ROOT / "results" / "search" / "pool.json"
 
-STRATEGIES = {
-    "crashgate_v1": locked_crashgate,
-    "smagate_v1": lambda: Spec(mode="threshold", close_above_sma_weeks=8, close_below_sma_weeks=16),
-}
 FILL_GRID = (
     ("same_close", 0.0),
     ("next_day", 0.0),
@@ -53,21 +50,6 @@ FILL_GRID = (
     ("next_week", 0.0),
     ("next_week", 0.0010),
 )
-
-
-class LazyGate:
-    """Builds the VCP gate only if a spec actually asks for it."""
-
-    def __init__(self, candles: Sequence[Candle]) -> None:
-        self._candles = candles
-        self._gate = None
-
-    def __call__(self, day: date) -> tuple[bool, bool]:
-        if self._gate is None:
-            from price_forecast.strategies.crashgate_entry import BaseBreakoutGate
-
-            self._gate = BaseBreakoutGate(self._candles)
-        return self._gate.parts(day)
 
 
 # --- ledger return matrix -------------------------------------------------------

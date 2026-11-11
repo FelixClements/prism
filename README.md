@@ -11,6 +11,7 @@ Walk-forward scoreboard for short-horizon Bitcoin forecasts, plus the weekly SMA
 - `price_forecast/datafactory/` — stationary-bootstrap remix and the synthetic regime factory
 - `price_forecast/search/` — CrashGate search: mutate, score on Coinbase + remix + synthetic paths, ledger
 - `price_forecast/replay/` — frozen replay harness: next-day fills, weekday anchors, parameter neighbours, exposure-matched and random-timing benchmarks, deflated Sharpe and CSCV PBO over the search ledger
+- `price_forecast/replay/book.py`, `portfolio.py` — fractional-exposure replay (0..1 BTC, fees on traded notional): 7-anchor ensembles of the locked rules and the pre-registered no-tuning baselines in `sizing.py` (vol target, TSMOM average, both), with a head-to-head against CrashGate
 - `results/` — live scoreboards (markdown/CSV); `results/search/` is local-only
 - `data/` — local candle CSV and generated paths (git-ignored)
 - `docs/` — architecture blueprint and research notes
@@ -65,6 +66,12 @@ Frozen replay of a locked rule (writes `results/replay/<strategy>.md`; DSR and P
 ```
 python -m price_forecast.replay --strategy crashgate_v1
 python -m price_forecast.replay --strategy smagate_v1
+```
+
+Fractional replay: anchor ensembles and sizing baselines (writes one scorecard per candidate plus `results/replay/baselines_vs_crashgate.md`):
+
+```
+python -m price_forecast.replay.portfolio --strategy all
 ```
 
 The VCP gate imports `requests`, so the venv needs it installed.

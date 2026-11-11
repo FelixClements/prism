@@ -206,3 +206,20 @@ def test_sizing_neighbours_include_the_frozen_rule_once():
         rule = SizingRule(kind)
         labels = [label for label, candidate in sizing_neighbours(rule) if candidate == rule]
         assert len(labels) == (1 if kind != "tsmom" else 0)
+
+
+def test_portfolio_scorecards_run_on_synthetic_candles(tmp_path):
+    from price_forecast.replay.portfolio import CANDIDATES, Context, Ledger, natural_start, score, spec_decisions
+
+    candles = _candles()
+    start = max(natural_start(candles, ALWAYS, c) for c in CANDIDATES)
+    ctx = Context(candles, ALWAYS, start, 0.001)
+    ledger = Ledger(0.01, 50, "synthetic")
+    for name in ("crashgate_v1_ensemble", "voltarget_tsmom"):
+        candidate = next(c for c in CANDIDATES if c.name == name)
+        text = score(candidate, ctx, ledger, mc_runs=5, seed=0, csv=tmp_path / "x.csv")
+        assert "## Scorecard" in text and "## 5. Selection bias" in text
+    sleeves = ctx.sleeves(CANDIDATES[0])
+    assert len(sleeves) == 7
+    assert all(item[0][0] >= start for item in sleeves)
+    assert spec_decisions(candles, SMA_8_16, ALWAYS, 6, start)[0][0] >= start

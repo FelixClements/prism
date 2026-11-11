@@ -141,6 +141,75 @@ def _desired(spec: Spec, closes: list[float], index: int, day: date, gate: Gate)
     return 1 if closes[index] >= max(prior) else 0
 
 
+class SpecSignal:
+    """A spec's weekly decision rule, separated from how fills are simulated.
+
+    ``decide(index, position)`` returns ``"buy"``, ``"sell"`` or ``None`` for the
+    signal on week ``index`` given the position held after that week's fills.
+    """
+
+    def __init__(
+        self,
+        weeks: Sequence[tuple[date, float]],
+        spec: Spec,
+        gate: Gate,
+        *,
+        bars: Sequence[WeekBar] | None = None,
+    ) -> None:
+        columns = None
+        if spec.mode == "threshold" and (spec.conditions or spec.exit_conditions):
+            source = bars
+            if source is None:
+                source = [WeekBar(day, close, close, close, close, None) for day, close in weeks]
+            if len(source) != len(weeks):
+                raise ValueError("indicator spec needs weekly bars")
+            columns = _indicator_columns(replace(spec, conditions=spec.conditions + spec.exit_conditions), source)
+        if spec.mode == "indicator":
+            if bars is None or len(bars) != len(weeks):
+                raise ValueError("indicator spec needs weekly bars")
+            columns = _indicator_columns(spec, bars)
+            ready = [index for index in range(len(weeks)) if _indicator_ready(spec, columns, index)]
+            if not ready:
+                raise ValueError("indicator is undefined on every week")
+            first = ready[0]
+        else:
+            first = _lookback(spec)
+            if len(weeks) <= first:
+                raise ValueError("need more weekly bars than the longest lookback")
+        self.spec = spec
+        self.weeks = list(weeks)
+        self.closes = [close for _day, close in weeks]
+        self.first = first
+        self._gate = gate
+        self._columns = columns
+
+    def decide(self, index: int, position: int) -> str | None:
+        spec = self.spec
+        closes = self.closes
+        columns = self._columns
+        gate = self._gate
+        day = self.weeks[index][0]
+        if spec.mode == "threshold":
+            if position == 0 and _threshold_entry(spec, closes, index, day, gate) and _addons_pass(spec, columns, index):
+                return "buy"
+            if position == 1 and (
+                _threshold_exit(spec, closes, index)
+                or (spec.exit_conditions and _conditions_hold(spec.exit_conditions, columns, index))
+            ):
+                return "sell"
+            return None
+        if spec.mode == "indicator":
+            assert columns is not None
+            want = _indicator_want(spec, columns, index, day, gate)
+        else:
+            want = _desired(spec, closes, index, day, gate)
+        if position == 0 and want == 1:
+            return "buy"
+        if position == 1 and want == 0:
+            return "sell"
+        return None
+
+
 def simulate_spec(
     weeks: Sequence[tuple[date, float]],
     spec: Spec,
@@ -154,27 +223,8 @@ def simulate_spec(
         raise ValueError("starting_dollars must be positive")
     if cost < 0:
         raise ValueError("cost must be non-negative")
-    columns = None
-    if spec.mode == "threshold" and (spec.conditions or spec.exit_conditions):
-        source = bars
-        if source is None:
-            source = [WeekBar(day, close, close, close, close, None) for day, close in weeks]
-        if len(source) != len(weeks):
-            raise ValueError("indicator spec needs weekly bars")
-        columns = _indicator_columns(replace(spec, conditions=spec.conditions + spec.exit_conditions), source)
-    if spec.mode == "indicator":
-        if bars is None or len(bars) != len(weeks):
-            raise ValueError("indicator spec needs weekly bars")
-        columns = _indicator_columns(spec, bars)
-        ready = [index for index in range(len(weeks)) if _indicator_ready(spec, columns, index)]
-        if not ready:
-            raise ValueError("indicator is undefined on every week")
-        first = ready[0]
-    else:
-        first = _lookback(spec)
-        if len(weeks) <= first:
-            raise ValueError("need more weekly bars than the longest lookback")
-    closes = [close for _day, close in weeks]
+    signal = SpecSignal(weeks, spec, gate, bars=bars)
+    first = signal.first
     position = 0
     wealth = starting_dollars
     btc = 0.0
@@ -219,27 +269,7 @@ def simulate_spec(
         long_flags.append(position == 1)
         if index + 1 >= len(weeks):
             continue
-        if spec.mode == "threshold":
-            if position == 0 and _threshold_entry(spec, closes, index, day, gate) and _addons_pass(spec, columns, index):
-                pending = "buy"
-            elif position == 1 and (
-                _threshold_exit(spec, closes, index)
-                or (spec.exit_conditions and _conditions_hold(spec.exit_conditions, columns, index))
-            ):
-                pending = "sell"
-        elif spec.mode == "indicator":
-            assert columns is not None
-            want = _indicator_want(spec, columns, index, day, gate)
-            if position == 0 and want == 1:
-                pending = "buy"
-            elif position == 1 and want == 0:
-                pending = "sell"
-        else:
-            want = _desired(spec, closes, index, day, gate)
-            if position == 0 and want == 1:
-                pending = "buy"
-            elif position == 1 and want == 0:
-                pending = "sell"
+        pending = signal.decide(index, position)
 
     pf_pnls = list(completed)
     if position == 1:

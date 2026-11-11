@@ -10,6 +10,7 @@ Walk-forward scoreboard for short-horizon Bitcoin forecasts, plus the weekly SMA
 - `price_forecast/backtest/` — SMAGate simulator, KPIs, and report formatters
 - `price_forecast/datafactory/` — stationary-bootstrap remix and the synthetic regime factory
 - `price_forecast/search/` — CrashGate search: mutate, score on Coinbase + remix + synthetic paths, ledger
+- `price_forecast/replay/` — frozen replay harness: next-day fills, weekday anchors, parameter neighbours, exposure-matched and random-timing benchmarks, deflated Sharpe and CSCV PBO over the search ledger
 - `results/` — live scoreboards (markdown/CSV); `results/search/` is local-only
 - `data/` — local candle CSV and generated paths (git-ignored)
 - `docs/` — architecture blueprint and research notes
@@ -58,6 +59,15 @@ CrashGate search:
 ```
 python -m price_forecast.search
 ```
+
+Frozen replay of a locked rule (writes `results/replay/<strategy>.md`; DSR and PBO need `results/search/ledger.jsonl`):
+
+```
+python -m price_forecast.replay --strategy crashgate_v1
+python -m price_forecast.replay --strategy smagate_v1
+```
+
+The VCP gate imports `requests`, so the venv needs it installed.
 
 These scripts are not in this repo; they come from agent skills under `~/.agents/skills/`:
 

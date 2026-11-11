@@ -19,14 +19,19 @@ class WeekBar:
     volume: float | None
 
 
-def weekly_bars(candles: Sequence[Candle]) -> list[WeekBar]:
-    """Sunday-ending weeks. The close matches weekly_sessions."""
+def weekly_bars(candles: Sequence[Candle], *, week_end_weekday: int = 6) -> list[WeekBar]:
+    """Complete weeks ending on ``week_end_weekday`` (Monday=0, default Sunday=6).
+
+    With the Sunday default the close matches weekly_sessions.
+    """
     if not candles:
         raise ValueError("candles are empty")
+    if not 0 <= week_end_weekday <= 6:
+        raise ValueError("week_end_weekday must be 0..6")
     last_day = candles[-1].day
     buckets: dict[date, list[Candle]] = {}
     for candle in candles:
-        week_end = candle.day + timedelta(days=(6 - candle.day.weekday()))
+        week_end = candle.day + timedelta(days=(week_end_weekday - candle.day.weekday()) % 7)
         buckets.setdefault(week_end, []).append(candle)
     bars: list[WeekBar] = []
     for week_end in sorted(buckets):

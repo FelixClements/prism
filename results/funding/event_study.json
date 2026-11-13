@@ -1,0 +1,150 @@
+{
+  "verdict": "FAIL",
+  "incremental": false,
+  "cells": [
+    {
+      "feature": "bybit_btcusd_f7",
+      "horizon": 7,
+      "n": 2861,
+      "spread": -0.01960782903118156,
+      "spread_t": -0.9649613018571135,
+      "spread_p": 0.3345641949773428,
+      "spread_holm_p": 1.0,
+      "spearman": 0.12727272727272726,
+      "slope_t": -1.4405298049574482,
+      "incremental_t": -2.1250048095441385
+    },
+    {
+      "feature": "bybit_btcusd_f7",
+      "horizon": 14,
+      "n": 2854,
+      "spread": -0.05163779281102354,
+      "spread_t": -1.4523354361493948,
+      "spread_p": 0.14640835890744483,
+      "spread_holm_p": 1.0,
+      "spearman": -0.006060606060606061,
+      "slope_t": -1.7036353059840257,
+      "incremental_t": -2.659948566760897
+    },
+    {
+      "feature": "bybit_btcusd_f7",
+      "horizon": 21,
+      "n": 2847,
+      "spread": -0.06931420119321069,
+      "spread_t": -1.37915064521953,
+      "spread_p": 0.1678483115462679,
+      "spread_holm_p": 1.0,
+      "spearman": -0.0303030303030303,
+      "slope_t": -1.1430436914940354,
+      "incremental_t": -2.04789592762336
+    },
+    {
+      "feature": "bybit_btcusd_f7",
+      "horizon": 28,
+      "n": 2840,
+      "spread": -0.09272189180121115,
+      "spread_t": -1.3826471276687906,
+      "spread_p": 0.1667730911174169,
+      "spread_holm_p": 1.0,
+      "spearman": -0.0303030303030303,
+      "slope_t": -0.8120913246585398,
+      "incremental_t": -1.7989990443085389
+    },
+    {
+      "feature": "binance_btcusdt_f7",
+      "horizon": 7,
+      "n": 2562,
+      "spread": -0.019033516513135677,
+      "spread_t": -0.9602981120299509,
+      "spread_p": 0.3369051999924251,
+      "spread_holm_p": 1.0,
+      "spearman": -0.0303030303030303,
+      "slope_t": -0.8168726211933786,
+      "incremental_t": -1.5284314200842664
+    },
+    {
+      "feature": "binance_btcusdt_f7",
+      "horizon": 14,
+      "n": 2555,
+      "spread": -0.03867724512641441,
+      "spread_t": -1.051105343239798,
+      "spread_p": 0.2932102103103761,
+      "spread_holm_p": 1.0,
+      "spearman": -0.29696969696969694,
+      "slope_t": -1.2490846837968976,
+      "incremental_t": -2.1601150121248884
+    },
+    {
+      "feature": "binance_btcusdt_f7",
+      "horizon": 21,
+      "n": 2548,
+      "spread": -0.05683950711300333,
+      "spread_t": -1.0564813086805123,
+      "spread_p": 0.29074837589775593,
+      "spread_holm_p": 1.0,
+      "spearman": -0.2121212121212121,
+      "slope_t": -0.8450384603429533,
+      "incremental_t": -1.815884637920188
+    },
+    {
+      "feature": "binance_btcusdt_f7",
+      "horizon": 28,
+      "n": 2541,
+      "spread": -0.08671046367029929,
+      "spread_t": -1.113367489855443,
+      "spread_p": 0.26555063155152403,
+      "spread_holm_p": 1.0,
+      "spearman": -0.29696969696969694,
+      "slope_t": -0.5713795486296331,
+      "incremental_t": -1.400620702482911
+    },
+    {
+      "feature": "venue_avg_f7",
+      "horizon": 7,
+      "n": 2562,
+      "spread": -0.013314542816788648,
+      "spread_t": -0.6659289874475264,
+      "spread_p": 0.5054564912701063,
+      "spread_holm_p": 1.0,
+      "spearman": -0.04242424242424241,
+      "slope_t": -0.7958065391781548,
+      "incremental_t": -1.5463916681223235
+    },
+    {
+      "feature": "venue_avg_f7",
+      "horizon": 14,
+      "n": 2555,
+      "spread": -0.032242455037554456,
+      "spread_t": -0.8756768238278456,
+      "spread_p": 0.38120574814841,
+      "spread_holm_p": 1.0,
+      "spearman": -0.32121212121212117,
+      "slope_t": -1.1523418811282065,
+      "incremental_t": -2.1517320896319188
+    },
+    {
+      "feature": "venue_avg_f7",
+      "horizon": 21,
+      "n": 2548,
+      "spread": -0.052967010188630585,
+      "spread_t": -0.9281875684328473,
+      "spread_p": 0.35331028184158775,
+      "spread_holm_p": 1.0,
+      "spearman": -0.23636363636363633,
+      "slope_t": -0.6530100082080562,
+      "incremental_t": -1.5483784241477099
+    },
+    {
+      "feature": "venue_avg_f7",
+      "horizon": 28,
+      "n": 2541,
+      "spread": -0.08262683133159887,
+      "spread_t": -1.0275667581243457,
+      "spread_p": 0.30415366771383434,
+      "spread_holm_p": 1.0,
+      "spearman": -0.2606060606060606,
+      "slope_t": -0.43672086796275,
+      "incremental_t": -1.2323502410277825
+    }
+  ]
+}
